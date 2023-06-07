@@ -34,16 +34,26 @@ def programar_cita():
         for child in frame_scrollbar.winfo_children():
             child.configure(state="disabled")
 
+<<<<<<< HEAD
 
+=======
+    # TODO cambio grande: reacomodé todo para que quepa
+>>>>>>> 1eb4ae5 (Versión 1.1)
 
     #!Label titulo
     config_cita = Label(p_citas, relief = 'solid',  text ='Programe su cita', font=('Times New Roman', 32), width = 15)
     config_cita.place(x=10,y=10)
     
     #!Label numero de cita
+<<<<<<< HEAD
     etiqueta1 = Label(p_citas, text = "Número de cita:", font = ("Times New Roman", 13, "bold"))
     etiqueta1.place(x = 10, y = 80)
     cita = Label(p_citas, text = str(num_cita + 1 ), font = ("Times New Roman", 13, "bold"),fg='blue')
+=======
+    etiqueta1 = Label(p_citas, text = "Número de cita", font = ("Times New Roman", 13, "bold"))
+    etiqueta1.place(x = 10, y = 80)
+    cita = Label(p_citas, text = str(num_cita), font = ("Times New Roman", 13, "bold"),fg='blue')
+>>>>>>> 1eb4ae5 (Versión 1.1)
     cita.place(x = 150, y = 80)
 
     #>! PRUEBA
@@ -54,6 +64,7 @@ def programar_cita():
     tipo_lab = Label(p_citas, text= 'Elija su tipo de cita', font = ("Times New Roman", 13, "bold"))
     tipo_lab.place(x = 10, y = 140)
 
+<<<<<<< HEAD
     p_rev = Checkbutton(p_citas, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height=5,width = 20,command=valor)
     p_rev.place(x = 10, y = 160)
     reins = Checkbutton(p_citas, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height=5, width = 20,command=valor)
@@ -78,6 +89,47 @@ def programar_cita():
     #? Marca de Vehiculo
 
     #! Scroll bar 
+=======
+    p_rev = Checkbutton(p_citas, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height=5,width = 20,command=valor, font = ("Times New Roman", 13))
+    p_rev.place(x = 160, y = 100)
+    reins = Checkbutton(p_citas, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height=5, width = 20,command=valor, font = ("Times New Roman", 13))
+    reins.place(x = 320, y = 100)
+
+    #? Placa y tit
+    tit_placa = Label(p_citas, text = 'Número de placa', font = ("Times New Roman", 13, "bold"))
+    tit_placa.place(x = 10, y = 200)
+    placa = Entry(p_citas,font=('Times New Roman', 13), width = 35,textvariable = num_placa)
+    placa.place(x = 160, y = 200)
+    
+    #? Tipo Vehiculo titulo
+    #Todo saqué el listbox del frame ya que no es necesario y ayuda a acomodarlo mejor
+    tit_tcarro = Label(p_citas, text= 'Tipo de Vehiculo', font = ("Times New Roman", 13, "bold"))
+    tit_tcarro.place(x = 10, y = 260)
+    
+    #TODO Lista de posibles vehículos y lugar en la lista
+    vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
+    elemento = 1
+    
+    listbox_vehiculo = Listbox(p_citas, height = 2, width = 62, font = ("Times New Roman", 13))
+    for vehiculo in vehiculos:
+        listbox_vehiculo.insert(elemento, vehiculo)
+        elemento += 1
+    listbox_vehiculo.place(x = 150, y = 260)
+    
+    #TODO poner nota para que el usuario se mueva con las flechas en el listbox
+    
+    #TODO de acá en adelante son cosas que añado extra
+    #? Marca del vehículo
+    #? Modelo 
+    #? Propietario
+    #? Teléfono
+    #? Correo
+    #? Direccion
+    #? Fecha y hora
+
+
+    """#! Scroll bar 
+>>>>>>> 1eb4ae5 (Versión 1.1)
     # Crear un Frame para contener el Listbox y el Scrollbar
     frame_scrollbar = Frame(p_citas)
     frame_scrollbar.place(x = 750, y = 50, width=250, height=400)
@@ -93,7 +145,11 @@ def programar_cita():
 
     # Agregar elementos al Listbox
     for i in range(100):
+<<<<<<< HEAD
         listbox.insert(END, f"Elemento {i}")
+=======
+        listbox.insert(END, f"Elemento {i}")"""
+>>>>>>> 1eb4ae5 (Versión 1.1)
     p_citas.mainloop()
 #?============================================================= Menu Principal ===================================================================================================
 
