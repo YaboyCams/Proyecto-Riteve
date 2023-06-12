@@ -22,6 +22,8 @@ elegida = IntVar()
 elegida.set(0)
 
 #?============================================================= Secundarias ===================================================================================================
+
+#?============================================================= Programar citas =========================================================================================================
 def programar_cita():
     p_citas = Toplevel()
     p_citas.geometry('1080x850')
@@ -108,6 +110,10 @@ def programar_cita():
             boton_guardar_cita.config(state = NORMAL)
         else:
             boton_guardar_cita.config(state = DISABLED)
+            
+    #! Hacer que la ventana se mueva con la rueda del mouse
+    def scroll(evento):
+        canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
         
     #? PROGRAMA 
         
@@ -123,6 +129,7 @@ def programar_cita():
 
     canvas.config(yscrollcommand=scrollbar.set)
     scrollbar.bind("<Configure>", lambda e: canvas.config(scrollregion = canvas.bbox("all")))
+    scrollbar.bind_all("<MouseWheel>", scroll)
 
     citas_frame = Frame(canvas)
     canvas.create_window((0,0), window = citas_frame, anchor = "nw")
@@ -344,6 +351,13 @@ def programar_cita():
     for i in range(100):
         listbox.insert(END, f"Elemento {i}")
     p_citas.mainloop()
+    
+#?============================================================= Configuración =========================================================================================================
+    def configuracion():
+        configuracion = Toplevel()
+        
+
+
 #?============================================================= Menu Principal ===================================================================================================
 
 
