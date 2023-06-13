@@ -6,7 +6,7 @@
 import os
 import pickle
 from validate_email import validate_email
-
+import datetime
 # GUI
 from tkinter import *
 from tkinter import ttk
@@ -14,6 +14,7 @@ from tkinter import messagebox
 #?============================================================= Programa ====================================================================================================
 registros = open("numeroscitas.dat", "rb")
 datos = pickle.load(registros)
+registros.close() # No sé si esto es necesario
 
 reteve_principal = Tk()
 num_cita = datos[0]
@@ -21,12 +22,19 @@ num_cita = datos[0]
 elegida = IntVar()
 elegida.set(0)
 
-#?============================================================= Secundarias ===================================================================================================
+vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
+
+#?============================================================= Secundarias ===================================================================================================
+#! Verifcar que solo hayan números
+def solo_numeros(evento):
+    texto = evento.widget.get()
+    if texto.isdigit() == False:
+        evento.widget.delete(0, END)
+        
 #?============================================================= Programar citas =========================================================================================================
 def programar_cita():
     p_citas = Toplevel()
-    p_citas.geometry('1080x850')
     p_citas.title("Programar Cita")
     p_citas.state('zoomed')
     listbox = Listbox(p_citas)
@@ -34,7 +42,7 @@ def programar_cita():
     tipo_revision = IntVar()
     tipo_vehiculo = Listbox()
     
-    #? FUNCIONES AUXILIARES
+    #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
     #>! PRUEBA
     def valor():
         print(tipo_revision.get())
@@ -97,12 +105,7 @@ def programar_cita():
             frame_manual.pack(side = TOP, anchor = W, padx = 10) # Mostrar frame manual
             citas_frame.update_idletasks()
             canvas.config(scrollregion=canvas.bbox("all"))
-            
-    #! Verifcar que solo hayan números
-    def solo_numeros(evento):
-        texto = evento.widget.get()
-        if texto.isdigit() == False or len(texto) > 2:
-            evento.widget.delete(0, END)    
+                
         
     #! Activar boton guardar
     def activar_guardar():
@@ -115,7 +118,7 @@ def programar_cita():
     def scroll(evento):
         canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
         
-    #? PROGRAMA 
+    #*============================================================== PROGRAMA ==================================================================================================================================================== 
         
     #todo Prueba del scrollbar
     main_frame = Frame(p_citas)
@@ -152,7 +155,7 @@ def programar_cita():
 
     
 
-    #? Check box y su label
+    #? Check box
     frame_tipo = Frame(citas_frame)
     frame_tipo.pack(side = TOP, anchor = W)
     tipo_lab = Label(frame_tipo, text= 'Elija su tipo de cita:', font = ("Times New Roman", 13, "bold"))
@@ -163,7 +166,7 @@ def programar_cita():
     reins = Checkbutton(frame_tipo, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height = 5, width = 20,command=valor, font = ("Times New Roman", 13))
     reins.pack(side = LEFT)
 
-    #? Placa y tit
+    #? Placa 
     
     frame_placa  =Frame(citas_frame)
     frame_placa.pack(side = TOP, anchor = W, pady = 20)
@@ -353,12 +356,274 @@ def programar_cita():
     p_citas.mainloop()
     
 #?============================================================= Configuración =========================================================================================================
-    def configuracion():
-        configuracion = Toplevel()
+def configuracion():
+    configuracion = Toplevel()
+    configuracion.title("Configuración")
+    configuracion.state("zoomed")
+    #*======================================================== FUNCIONES AUXILIARES =====================================================================================================================
+    #! Acutalizar contenido del combo box del final del horario
+    def actualizar_opciones(evento):
+        seleccionada = combo_horas1.current()
+        if seleccionada:
+            opciones = combo_horas1["values"][seleccionada + 1:]
+            combo_horas2["values"] = opciones
+        else:
+            combo_horas2["values"] = []
+    
+    #! Verficar que minutos de revisón estén entre los parámetros
+    def tiempo_revision(evento):
+        min  = mins_revision.get()
+        if not min.isdigit() or not int(min) <= 45:
+            evento.widget.delete(0, END)
+    
+    #! Verificar que dias para reinspeccion cumplan los parámetros 
+    def dias_reinspeccion(evento):
+        dias = max_dias.get()
+        if not dias.isdigit() or not int(dias) <= 60:
+            evento.widget.delete(0, END)
+    
+    #! Verificar si el IVA está entre los parámetros
+    def iva_permitido(evento):
+        porcentaje = percent_iva.get()
+        try:
+            porcentaje = float(porcentaje)
+            if porcentaje > 20.0:
+                evento.widget.delete(0, END)
+        except ValueError:
+            evento.widget.delete(0, END)
+    
+    #! Guardar configuración         
+    def guardar_config():
+        if num_lineas.get() and combo_horas1.get() and combo_horas2.get() and mins_revision.get() and max_dias.get() and num_fallas.get() and percent_iva.get() and entry1.get() and entry2.get and entry3.get() and entry4.get() and entry5.get() and entry6.get() and entry7.get() and entry8.get():
+            datos = [lineas.get(), combo_horas1.get(), combo_horas2.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]            
+            ajustes = open("configuracion_riteve.dat", "wb")
+            pickle.dump(datos, ajustes)
+            ajustes.close()
+            configuracion.destroy()
+            
+            
+    
+    #*======================================================== PROGRAMA PRINCIPAL ===============================================================================================================
         
+    titulo_config = Label(configuracion, text = "Configuración", font = ("Times New Roman", 20, "bold"))
+    titulo_config.pack(side = TOP, anchor = CENTER)
+     
+    #? Cantidad de líneas de trabajo
+    tit_lineas = Label(configuracion, text = "Cantidad de líneas de trabajo en la estación:", font = ("Times New Roman", 13, "bold"))
+    tit_lineas.place(x = 10, y = 50)
+    
+    lineas = IntVar()
+    lineas.set(6)
+    num_lineas = Entry(configuracion, textvariable = lineas, font = ("Times New Roman", 13), width = 2)
+    num_lineas.place(x = 500, y = 50)
+    
+    #? Horario
+    tit_horario = Label(configuracion, text = "Horario de la estación:", font = ("Times New Roman", 13, "bold"))
+    tit_horario.place(x = 10, y = 90)
+    
+    #* Inicio
+    tit_inicio = Label(configuracion, text = "Hora inicial: ", font = ("Times New Roman", 13))
+    tit_inicio.place(x = 30, y = 110)
+    
+    horas_disponibles = []
+    contador = 0
+    
+    while contador != 2:
+        if contador == 0:
+            horas_disponibles.append("12:00 AM")
+        else:
+            horas_disponibles.append("12:00 PM")
+        for i in range(1,12):
+            if contador == 0:
+                horas_disponibles.append(str(i) + ":00 AM")
+            else:
+                horas_disponibles.append(str(i) + ":00 PM")
+        contador += 1
+            
+    combo_horas1 = ttk.Combobox(configuracion, values = horas_disponibles)
+    combo_horas1.place(x = 500, y = 110)
+    combo_horas1.bind("<<ComboboxSelected>>", actualizar_opciones)
+    
+    combo_horas1.set("6:00 AM")
+    
+    #* Final 
+    tit_final = Label(configuracion, text = "Hora final: ", font = ("Times New Roman", 13))
+    tit_final.place(x = 30, y = 140)
+    
+    combo_horas2 = ttk.Combobox(configuracion)
+    combo_horas2.place(x= 500, y = 140)
+    combo_horas2.set("9:00 PM")
+    
+    #? Minutos por cita
+    tit_min = Label(configuracion, text = "Minutos por cita de revisión:", font = ("Times New Roman", 13, "bold"))
+    tit_min.place(x = 10, y = 170)
+    
+    minutos = IntVar()
+    minutos.set(25)
+    mins_revision = Entry(configuracion, textvariable = minutos, width = 2, font = ("Times New Roman", 13))
+    mins_revision.bind("<KeyRelease>", tiempo_revision)
+    mins_revision.place(x = 500, y = 170)
+    
+    
+    #? Cantidad máxima de días para reinspección
+    tit_dias = Label(configuracion, text = "Cantidad máxima de días para reinspección:", font = ("Times New Roman", 13, "bold"))
+    tit_dias.place(x = 10, y = 210)
+    
+    dias_rev = IntVar()
+    dias_rev.set(30)
+    max_dias = Entry(configuracion, textvariable = dias_rev, width = 2, font = ("Times New Roman", 13))
+    max_dias.bind("<KeyRelease>", dias_reinspeccion)
+    max_dias.place(x = 500, y = 210)
+    
+    #? Cantidad de fallas para sacar vehículo de circulación
+    tit_fallas = Label(configuracion, text = "Cantidad de fallas graves para sacar de circulación:", font = ("Times New Roman", 13, "bold"))
+    tit_fallas.place(x = 10, y = 250)
+    
+    fallas_max = IntVar()
+    fallas_max.set(4)
+    num_fallas = Entry(configuracion, width = 2, textvariable = fallas_max, font = ("Times New Roman", 13))
+    num_fallas.bind("<KeyRelease>", solo_numeros)
+    num_fallas.place(x = 500, y = 250)
+        
+    #? IVA
+    tit_iva = Label(configuracion, text = "Porcentaje de IVA sobre tarifa:", font = ("Times New Roman", 13, "bold"))
+    tit_iva.place(x = 10, y = 290)
+    
+    iva = DoubleVar()
+    iva.set(13.0)
+    percent_iva = Entry(configuracion, font = ("Times New Roman", 13), textvariable = iva, width = 5)
+    percent_iva.bind("<KeyRelease>", iva_permitido)
+    percent_iva.place(x = 500, y = 290)
+    
+    #? Tabla de tarifas (solo columna derecha es alterable)
+    tit_tarifas = Label(configuracion, text = "Tabla de tarifas:", font = ("Times New Roman", 13, "bold"))
+    tit_tarifas.place(x = 10, y = 330)
+    
+    # Tabla
+    canvas_tarifa = Canvas(configuracion, width = 800, height = 9 * 50)
+    canvas_tarifa.place(y = 360)
+    
+    
+    ancho1 = 600
+    ancho2 = 120
+    altura = 35
+    
+    for fila in range(9):
+        # Primera columna
+        x1 = 0
+        y1 = fila * altura
+        x2 = x1 + ancho1
+        y2 = y1 + altura
+        canvas_tarifa.create_rectangle(x1,y1,x2,y2, outline = "black")
+        
+        # Segunda columna
+        x1 = ancho1
+        x2 = x1 + ancho2
+        canvas_tarifa.create_rectangle(x1,y1,x2,y2, outline = "black")
+        
+    # Tipos de vehículo y sus precios
+    tit_vehiculo = Label(configuracion, text = "Vehiculo", font = ("Times New Roman", 13, "bold"))
+    tit_vehiculo.place(x = 250, y = 365)
+    tit_tarifa = Label(configuracion, text = "Tarifa", font = ("Times New Roman", 13, "bold"))
+    tit_tarifa.place(x = 630, y = 365)
+    
+    # Primero vehículo
+    label1 = Label(configuracion, text = f"{vehiculos[0]}", font = ("Times New Roman", 13))
+    label1.place(x = 10, y = 400)
+    
+    var1 = IntVar()
+    var1.set(10920)
+    entry1 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var1)
+    entry1.place(x = 625, y = 400)
+    entry1.bind("<KeyRelease>", solo_numeros)
+    
+    # Segundo vehículo
+    label2 = Label(configuracion, text = f"{vehiculos[1]}", font = ("Times New Roman", 13))
+    label2.place(x = 10, y = 435)
+    
+    var2 = IntVar()
+    var2.set(14380)
+    entry2 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var2)
+    entry2.place(x = 625, y = 435)
+    entry2.bind("<KeyRelease>", solo_numeros)
+    
+    
+    # Tercer vehículo
+    label3 = Label(configuracion, text = f"{vehiculos[2]}", font = ("Times New Roman", 13))
+    label3.place(x = 10, y = 470)
+    
+    var3 = IntVar()
+    var3.set(14380)
+    entry3 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var3)
+    entry3.place(x = 625, y = 470)
+    entry3.bind("<KeyRelease>", solo_numeros)
+    
+    # Cuarto vehículo 
+    label4 = Label(configuracion, text = f"{vehiculos[3]}", font = ("Times New Roman", 13))
+    label4.place(x = 10, y = 505)
+    
+    var4 = IntVar()
+    var4.set(11785)
+    entry4 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var4)
+    entry4.place(x = 625, y = 505)
+    entry4.bind("<KeyRelease>", solo_numeros)
+    
+    # Quinto vehículo
+    label5 = Label(configuracion, text = f"{vehiculos[4]}", font = ("Times New Roman", 13))
+    label5.place(x = 10, y = 540)
+    
+    var5 = IntVar()
+    var5.set(14380)
+    entry5 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var5)
+    entry5.place(x = 625, y = 540)
+    entry5.bind("<KeyRelease>", solo_numeros)
+    
+    # Sexto vehículo
+    label6 = Label(configuracion, text = f"{vehiculos[5]}", font = ("Times New Roman", 13))
+    label6.place(x = 10, y = 575)
+    
+    var6 = IntVar()
+    var6.set(7195)
+    entry6 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var6)
+    entry6.place(x = 625, y = 575)
+    entry6.bind("<KeyRelease>", solo_numeros)
+    
+    
+    # Setimo vehículo
+    label7 = Label(configuracion, text = f"{vehiculos[6]}", font = ("Times New Roman", 13))
+    label7.place(x = 10, y = 610)
+    
+    var7 = IntVar()
+    var7.set(14380)
+    entry7 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var7)
+    entry7.place(x = 625, y = 610)
+    entry7.bind("<KeyRelease>", solo_numeros)
+    
+    # Octavo vehículo
+    label8 = Label(configuracion, text = f"{vehiculos[7]}", font = ("Times New Roman", 13))
+    label8.place(x = 10, y = 645)
+    
+    var8 = IntVar()
+    var8.set(6625)
+    entry8 = Entry(configuracion, width = 8, font = ("Times New Roman", 13), textvariable = var8)
+    entry8.place(x = 625, y = 645) 
+    entry8.bind("<KeyRelease>", solo_numeros)
+
+    y = 400
+    for i in vehiculos:
+        colon = Label(configuracion, text = "₡", font = ("Times New Roman", 13))
+        colon.place(x = 610, y = y)
+        y += 35
+        
+    #? Guardar configuracion
+    btn_guardado = Button(configuracion, text = "Aplicar", font = ("Times New Roman", 13), width = 7, bg = "light green", command = guardar_config)
+    btn_guardado.place(x = 900, y = 645)
+    
+
+    configuracion.mainloop()
 
 
-#?============================================================= Menu Principal ===================================================================================================
+#?============================================================= Menú Principal ===================================================================================================
 
 
 reteve_principal.geometry('500x640')
@@ -388,7 +653,7 @@ Revision.place(x = 20, y = 280)
 Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
 Lista_fallas.place(x = 20, y = 340)
 
-Configuracion = Button(reteve_principal, text = "Configuración", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
+Configuracion = Button(reteve_principal, text = "Configuración", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = configuracion)
 Configuracion.place(x = 20, y = 400)
 
 Ayuda = Button(reteve_principal,text='Ayuda',font=('Times New Roman', 10),bg = "snow",width = 16, height = 3)
