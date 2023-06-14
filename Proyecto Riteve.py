@@ -22,6 +22,10 @@ num_cita = datos[0]
 elegida = IntVar()
 elegida.set(0)
 
+crud = IntVar()
+
+Diccionario_Fallas = {}
+
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 
@@ -142,7 +146,10 @@ def programar_cita():
     #!Label titulo
     frame_tit = Frame(citas_frame)
     frame_tit.pack(side = TOP, anchor = W)
+
+    config_cita = Label(frame_tit, relief = 'solid',  text ='Programe su cita', font=('Times New Roman', 20))
     config_cita = Label(frame_tit, relief = 'solid',  text ='Programe su cita', font=('Times New Roman', 20), width = 15)
+
     config_cita.pack(side = LEFT, padx = 5, pady = 5)
     
     #!Label numero de cita
@@ -618,11 +625,65 @@ def configuracion():
     #? Guardar configuracion
     btn_guardado = Button(configuracion, text = "Aplicar", font = ("Times New Roman", 13), width = 7, bg = "light green", command = guardar_config)
     btn_guardado.place(x = 900, y = 645)
+    configuracion.mainloop()    
     
+def lista_de_fallas():
+    fallas_ventana = Toplevel()
+    fallas_ventana.title("Lista de Fallas")
+    fallas_ventana.state('zoomed')
+    codigo = StringVar()
+    def largo_codigo(evento):
+        entry_modelo = codigo.get()
+        try:
+            entry_modelo = int(entry_modelo)
+            if len(str(entry_modelo)) > 5:
+                modelo_valido = str(entry_modelo)[:5]
+                pedir_codigo.delete(0, END)
+                pedir_codigo.insert(0, modelo_valido)
+        except ValueError:
+            modelo_valido = ''
+            pedir_codigo.delete(0, END)
+            pedir_codigo.insert(0, modelo_valido)
+    #! Titulo label 
 
-    configuracion.mainloop()
+    tit = Label(fallas_ventana, relief = 'solid',  text ='Menu Lista de fallas', font=('Times New Roman', 32), width = 20)
+    tit.place(x=10,y=10)
+    instruccion_label=Label(fallas_ventana,  text ='Tipo de acción', font=('Times New Roman', 20), width = 15)
+    instruccion_label.place(x=10,y=100)
+
+    create = Radiobutton(fallas_ventana, text="Agregar Fallas", variable=crud, value=1, font=("Times New Roman", 13))
+    create.place(x=10, y=200)
+    read = Radiobutton(fallas_ventana, text="Consultar Fallas", variable=crud, value=2, font=("Times New Roman", 13))
+    read.place(x=10, y=250)
+    upload = Radiobutton(fallas_ventana, text="Modificar Fallas", variable=crud, value=3, font=("Times New Roman", 13))
+    upload.place(x=10, y=300)
+    delete = Radiobutton(fallas_ventana, text="Eliminar Fallas", variable=crud, value=4, font=("Times New Roman", 13))
+    delete.place(x=10, y=350)
 
 
+    tit_code = Label(fallas_ventana, text ='Introduzca su código', font=('Times New Roman', 20))
+    tit_code.place(x=500, y=150)
+    pedir_codigo = Entry(fallas_ventana,font=('Times New Roman', 18), width = 15, textvariable=codigo)
+    pedir_codigo.place(x=500, y=200)
+    pedir_codigo.bind("<KeyRelease>", largo_codigo)
+
+    #!FRAME
+    frame_descripcion = Frame(fallas_ventana, width=400, height=200)
+    frame_descripcion.place(x=500, y=300)
+    #!SCROLLBAR
+    scrollbar = Scrollbar(frame_descripcion)
+    scrollbar.pack(side="right", fill="y")
+
+    #?Texto box
+    tit_descrip = Label(fallas_ventana, text ='Introduzca una descripción', font=('Times New Roman', 20))
+    tit_descrip.place(x=500, y=250)
+    descripcion = Text(frame_descripcion, height=10, width=40, bg="light cyan", yscrollcommand=scrollbar.set)
+    descripcion.pack(side="left", fill="both")
+    scrollbar.config(command=descripcion.yview)
+
+    #?
+
+    fallas_ventana.mainloop()
 #?============================================================= Menú Principal ===================================================================================================
 
 
@@ -650,7 +711,7 @@ Ingreso.place(x=20,y=220)
 Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
 Revision.place(x = 20, y = 280)
 
-Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
+Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command= lista_de_fallas)
 Lista_fallas.place(x = 20, y = 340)
 
 Configuracion = Button(reteve_principal, text = "Configuración", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = configuracion)
