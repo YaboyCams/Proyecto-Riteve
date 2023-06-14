@@ -6,7 +6,9 @@
 import os
 import pickle
 from validate_email import validate_email
-import datetime
+from datetime import datetime
+from datetime import timedelta
+
 # GUI
 from tkinter import *
 from tkinter import ttk
@@ -23,6 +25,7 @@ elegida = IntVar()
 elegida.set(0)
 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
+ 
 
 
 #?============================================================= Secundarias ===================================================================================================
@@ -37,16 +40,57 @@ def programar_cita():
     p_citas = Toplevel()
     p_citas.title("Programar Cita")
     p_citas.state('zoomed')
-    listbox = Listbox(p_citas)
     num_placa = StringVar() 
     tipo_revision = IntVar()
-    tipo_vehiculo = Listbox()
+    
+    #?Configuración
+    ajustes = open("configuracion_riteve.dat", "rb")
+    config = pickle.load(ajustes)
+    ajustes.close()
+    
+    num_lineas = config[0]
+    hora_inicio = config[1]
+    hora_fin = config[2]
+    duracion_cita = config[3]
+    dias_reinspeccion = config[4]
+    max_fallas = config[5]
+    iva = config[6]
+    tarifas = config[7]
+    
+    #TODO encontrar la citas de el día actual dentro de un mes
+    #! Fecha actual
+    fecha_actual = datetime.now()
+    con_formato = datetime.strftime(fecha_actual, "%d/%m/%Y  %H:%M:%S")
+
+    anno_actual = fecha_actual.year 
+    dia_actual = fecha_actual.day
+    mes_actual = fecha_actual.month 
+    hora_actual = fecha_actual.hour
+    minutos_actual = fecha_actual.minute
+
+    fecha_uso = datetime(anno_actual, mes_actual, dia_actual, hora_actual, 0)
+
+    hora_siguiente = hora_actual + 1
+    mes_siguiente = mes_actual + 1
+    anno_siguiente = anno_actual
+
+    # En caso de fin de año
+    if mes_siguiente == 13:
+        mes_siguiente = 1
+        anno_siguiente = anno_actual + 1
+        
+    fecha_limite = datetime(anno_siguiente, mes_siguiente, dia_actual, hora_siguiente, minutos_actual)
+    diferencia = timedelta(minutes = duracion_cita)
+    citas_disponibles = []
+    #! Lista de fechas disponibles
+    while fecha_uso < fecha_limite:
+        if fecha_uso.hour >= hora_inicio and fecha_uso.hour <= hora_fin: # Corrección
+            formateada = datetime.strftime(fecha_uso, "%d/%m/%Y  %H:%M:%S")
+            citas_disponibles.append(formateada)
+            fecha_uso += diferencia
     
     #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
-    #>! PRUEBA
-    def valor():
-        print(tipo_revision.get())
-        
+       
     #! RESTRICCIONES Y VALIDACIONES DE DATOS
     def long_placa(evento):
         entry_placa = placa.get()
@@ -138,7 +182,10 @@ def programar_cita():
     canvas.create_window((0,0), window = citas_frame, anchor = "nw")
 
     # TODO cambio grande: reacomodé todo para que quepa
-
+    #! Indicar fecha 
+    actual = Label(citas_frame, font = ("Times New Roman", 13, "bold"), text = f"Hora actual: {con_formato}")
+    actual.pack(side = TOP, anchor = E)
+    
     #!Label titulo
     frame_tit = Frame(citas_frame)
     frame_tit.pack(side = TOP, anchor = W)
@@ -161,9 +208,9 @@ def programar_cita():
     tipo_lab = Label(frame_tipo, text= 'Elija su tipo de cita:', font = ("Times New Roman", 13, "bold"))
     tipo_lab.pack(side = LEFT, anchor = W, padx = 10)
 
-    p_rev = Checkbutton(frame_tipo, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height = 5,width = 20,command=valor, font = ("Times New Roman", 13))
+    p_rev = Checkbutton(frame_tipo, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height = 5,width = 20,font = ("Times New Roman", 13))
     p_rev.pack(side = LEFT, padx = 57)
-    reins = Checkbutton(frame_tipo, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height = 5, width = 20,command=valor, font = ("Times New Roman", 13))
+    reins = Checkbutton(frame_tipo, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height = 5, width = 20,font = ("Times New Roman", 13))
     reins.pack(side = LEFT)
 
     #? Placa 
@@ -351,8 +398,8 @@ def programar_cita():
     listbox.config(yscrollcommand=scrollbar.set)
 
     # Agregar elementos al Listbox
-    for i in range(100):
-        listbox.insert(END, f"Elemento {i}")
+    for i in citas_disponibles:
+        listbox.insert(END, f"{i}")
     p_citas.mainloop()
     
 #?============================================================= Configuración =========================================================================================================
@@ -395,7 +442,7 @@ def configuracion():
     #! Guardar configuración         
     def guardar_config():
         if num_lineas.get() and combo_horas1.get() and combo_horas2.get() and mins_revision.get() and max_dias.get() and num_fallas.get() and percent_iva.get() and entry1.get() and entry2.get and entry3.get() and entry4.get() and entry5.get() and entry6.get() and entry7.get() and entry8.get():
-            datos = [lineas.get(), combo_horas1.get(), combo_horas2.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]            
+            datos = [lineas.get(), combo_horas1.get(), combo_horas2.get(), minutos.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]
             ajustes = open("configuracion_riteve.dat", "wb")
             pickle.dump(datos, ajustes)
             ajustes.close()
