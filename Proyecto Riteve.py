@@ -5,12 +5,20 @@
 #!============================================================== Módulos ==========================================================================================================
 import os
 import pickle
-from validate_email import validate_email
 import datetime
 # GUI
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+#TODO ========================================================= IMPORTS CORREOS =============================================================================================
+from validate_email import validate_email
+import ssl
+import smtplib 
+from email.message import EmailMessage
+import re
+import smtplib
+import logging  
+import socket 
 #?============================================================= Programa ====================================================================================================
 registros = open("numeroscitas.dat", "rb")
 datos = pickle.load(registros)
@@ -21,11 +29,12 @@ num_cita = datos[0]
 
 elegida = IntVar()
 elegida.set(0)
+#todo========================================================================== CAMBIOS PARA CRUD ====================================================================================
+lf = open('Lista_Fallas.dat','rb')
+Diccionario_Fallas = pickle.load(lf)
+lf.close()
 
-crud = IntVar()
-
-Diccionario_Fallas = {}
-
+#todo========================================================================== 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 
@@ -626,12 +635,21 @@ def configuracion():
     btn_guardado = Button(configuracion, text = "Aplicar", font = ("Times New Roman", 13), width = 7, bg = "light green", command = guardar_config)
     btn_guardado.place(x = 900, y = 645)
     configuracion.mainloop()    
-    
+#!============================================================= CRUD =============================================================================================================
 def lista_de_fallas():
     fallas_ventana = Toplevel()
     fallas_ventana.title("Lista de Fallas")
     fallas_ventana.state('zoomed')
     codigo = StringVar()
+    falla = IntVar()
+    crud = IntVar()
+    crud.set(0)
+    def sacar_texto():
+        texto = descripcion.get("1.0", "end-1c")
+        if len(texto.strip()) >= 5 and len(texto.strip()) <= 200:
+            return texto.strip()
+        else:
+            return False
     def largo_codigo(evento):
         entry_modelo = codigo.get()
         try:
@@ -644,6 +662,201 @@ def lista_de_fallas():
             modelo_valido = ''
             pedir_codigo.delete(0, END)
             pedir_codigo.insert(0, modelo_valido)
+    def activar_create():
+        pedir_codigo.configure(state="normal")
+        descripcion.configure(state="normal")
+        radio_lleve.configure(state="normal")
+        radio_grave.configure(state="normal")
+        btn_realizar.configure(state="normal")
+
+        #RESET
+        btn_realizar.place_forget()
+        guardar_cambio.place_forget()
+        pedir_codigo.delete(0, END)
+        descripcion.delete("1.0", "end")
+        radio_lleve.deselect()
+        radio_grave.deselect()
+
+        btn_realizar.place(x=500, y=650)
+        btn_realizar.configure(text="Añadir Falla")
+    def activar_consultar():
+        pedir_codigo.configure(state="normal")
+        descripcion.configure(state="normal")
+        descripcion.delete("1.0", "end")
+        descripcion.configure(state="disabled")
+        radio_lleve.configure(state="disabled")
+        radio_grave.configure(state="disabled")
+        btn_realizar.configure(state="normal")
+
+        #RESET
+        btn_realizar.place_forget()
+        guardar_cambio.place_forget()
+        pedir_codigo.delete(0, END)
+        descripcion.delete("1.0", "end")
+        radio_lleve.deselect()
+        radio_grave.deselect()
+
+        btn_realizar.place(x=500, y=650)
+        btn_realizar.configure(text="Consultar Falla")
+    def activar_modificar():
+        pedir_codigo.configure(state="normal")
+        descripcion.configure(state="normal")
+        descripcion.delete("1.0", "end")
+        descripcion.configure(state="disabled")
+        radio_lleve.configure(state="disabled")
+        radio_grave.configure(state="disabled")
+        btn_realizar.configure(state="normal")
+
+        #RESET
+        btn_realizar.place_forget()
+        guardar_cambio.place_forget()
+        pedir_codigo.delete(0, END)
+        descripcion.delete("1.0", "end")
+        radio_lleve.deselect()
+        radio_grave.deselect()
+
+        btn_realizar.place(x=500, y=650)
+        btn_realizar.configure(text="BUSCAR FALLA")
+        guardar_cambio.place(x=500, y=750)
+    def activar_eliminar():
+        pedir_codigo.configure(state="normal")
+        descripcion.configure(state="normal")
+        descripcion.delete("1.0", "end")
+        descripcion.configure(state="disabled")
+        radio_lleve.configure(state="disabled")
+        radio_grave.configure(state="disabled")
+        btn_realizar.configure(state="normal")
+
+        #RESET
+        btn_realizar.place_forget()
+        guardar_cambio.place_forget()
+        pedir_codigo.delete(0, END)
+        descripcion.delete("1.0", "end")
+        radio_lleve.deselect()
+        radio_grave.deselect()
+
+        btn_realizar.place(x=500, y=650)
+        btn_realizar.configure(text="ELIMINAR FALLA")
+
+    #ADD
+    def añadir_elemento():
+        if codigo.get() != "0" and codigo.get() != "":
+            validacion = sacar_texto()
+            if validacion !=  False:
+                print(falla.get())
+                if falla.get() == 1 or falla.get() == 2:
+                    code = codigo.get()
+                    if code not in Diccionario_Fallas:
+                        tipo_falla = falla.get()
+                        Diccionario_Fallas[code] = (validacion,tipo_falla)
+                        with open("Lista_Fallas.dat", "wb") as file:
+                            pickle.dump(Diccionario_Fallas,file)
+                        messagebox.showinfo("SISTEMA", "SE AGREGO LA FALLA AL SISTEMA.")
+                    else:
+                        messagebox.showinfo("ERROR", "LA FALLA YA ESTA REGISTRADA.")
+                else:
+                    messagebox.showinfo("ERROR", "Debe seleccionar el tipo de falla")
+            else:
+                messagebox.showinfo("ERROR", "La descripcion debe de estar entre 5 a 200 caracteres")
+        else:
+            messagebox.showinfo("ERROR", "El codigo debe de ser entre el rango de 1 a 9999")
+    #CONSULTAR
+    def consultar_elemento():
+        if codigo.get() != "0" and codigo.get() != "":
+            code = codigo.get()
+            if code in Diccionario_Fallas:
+                info = Diccionario_Fallas[code]
+                descripcion.configure(state="normal")
+                descripcion.insert("1.0", info[0])
+                descripcion.configure(state="disabled")
+                if info[1] == 1:
+                    falla.set(1)
+                else:
+                    falla.set(2)
+            else:
+                messagebox.showinfo("ERROR", "La falla ingresada no esta registrada")
+        else:
+            messagebox.showinfo("ERROR", "El codigo debe de ser entre el rango de 1 a 9999")
+    #MODIFICAR
+    def modificar_elemento():
+        if codigo.get() != "0" and codigo.get() != "":
+            code = codigo.get()
+            if code in Diccionario_Fallas:
+                info = Diccionario_Fallas[code]
+                descripcion.configure(state="normal")
+                descripcion.insert("1.0", info[0])
+                anterior = info[0] 
+                if info[1] == 1:
+                    falla.set(1)
+                else:
+                    falla.set(2)
+                pedir_codigo.configure(state="disable")
+                radio_lleve.configure(state="normal")
+                radio_grave.configure(state="normal")
+            else:
+                messagebox.showinfo("ERROR", "La falla ingresada no esta registrada")
+        else:
+            messagebox.showinfo("ERROR", "El codigo debe de ser entre el rango de 1 a 9999")
+    def modificar_guardar():
+        validacion = sacar_texto()
+        if validacion !=  False:
+            code = codigo.get()
+            tipo_falla = falla.get()
+            Diccionario_Fallas[code] = (validacion,tipo_falla)
+            with open("Lista_Fallas.dat", "wb") as file:
+                pickle.dump(Diccionario_Fallas,file)
+            messagebox.showinfo("SISTEMA", "Modificacion Exitosa!")
+            activar_modificar()
+
+        else:
+            code = codigo.get()
+            info = Diccionario_Fallas[code]
+            tipo_falla = falla.get()
+            anterior = info[0]
+
+            Diccionario_Fallas[code] = (anterior,tipo_falla)
+            with open("Lista_Fallas.dat", "wb") as file:
+                pickle.dump(Diccionario_Fallas,file)
+            messagebox.showinfo("SISTEMA", "Modificacion Exitosa!")
+            activar_modificar()     
+    #ELIMINAR
+    def eliminar_elemento():
+        if codigo.get() != "0" and codigo.get() != "":
+            code = codigo.get()
+            if code in Diccionario_Fallas:
+                info = Diccionario_Fallas[code]
+                descripcion.configure(state="normal")
+                descripcion.insert("1.0", info[0])
+                anterior = info[0] 
+                if info[1] == 1:
+                    falla.set(1)
+                else:
+                    falla.set(2)
+                x = messagebox.askquestion('FALLA ENCONTRADA','¿Desea confirmar la eliminación de la falla' + str(code)+"?",master= fallas_ventana)
+                if x == 'yes':
+                    Diccionario_Fallas.pop(code)
+                    with open("Lista_Fallas.dat", "wb") as file:
+                        pickle.dump(Diccionario_Fallas,file)
+                    activar_eliminar()
+                else:
+                    activar_eliminar()
+            else:
+                messagebox.showinfo("ERROR", "La falla ingresada no esta registrada, no se puede eliminar")
+        else:
+            messagebox.showinfo("ERROR", "El codigo debe de ser entre el rango de 1 a 9999")        
+    def accion():
+        caso = crud.get()
+        match caso:
+            case 1:
+                añadir_elemento()
+            case 2:
+                consultar_elemento()
+            case 3:
+                modificar_elemento()
+            case 4:
+                eliminar_elemento()
+
+                                
     #! Titulo label 
 
     tit = Label(fallas_ventana, relief = 'solid',  text ='Menu Lista de fallas', font=('Times New Roman', 32), width = 20)
@@ -651,13 +864,13 @@ def lista_de_fallas():
     instruccion_label=Label(fallas_ventana,  text ='Tipo de acción', font=('Times New Roman', 20), width = 15)
     instruccion_label.place(x=10,y=100)
 
-    create = Radiobutton(fallas_ventana, text="Agregar Fallas", variable=crud, value=1, font=("Times New Roman", 13))
+    create = Radiobutton(fallas_ventana, text="Agregar Fallas", variable=crud, value=1, font=("Times New Roman", 13),command=activar_create)
     create.place(x=10, y=200)
-    read = Radiobutton(fallas_ventana, text="Consultar Fallas", variable=crud, value=2, font=("Times New Roman", 13))
+    read = Radiobutton(fallas_ventana, text="Consultar Fallas", variable=crud, value=2, font=("Times New Roman", 13),command=activar_consultar)
     read.place(x=10, y=250)
-    upload = Radiobutton(fallas_ventana, text="Modificar Fallas", variable=crud, value=3, font=("Times New Roman", 13))
+    upload = Radiobutton(fallas_ventana, text="Modificar Fallas", variable=crud, value=3, font=("Times New Roman", 13),command=activar_modificar)
     upload.place(x=10, y=300)
-    delete = Radiobutton(fallas_ventana, text="Eliminar Fallas", variable=crud, value=4, font=("Times New Roman", 13))
+    delete = Radiobutton(fallas_ventana, text="Eliminar Fallas", variable=crud, value=4, font=("Times New Roman", 13),command=activar_eliminar)
     delete.place(x=10, y=350)
 
 
@@ -682,6 +895,24 @@ def lista_de_fallas():
     scrollbar.config(command=descripcion.yview)
 
     #?
+    tfalla = Label(fallas_ventana, text ='Tipo de Falla', font=('Times New Roman', 20))
+    tfalla.place(x=500, y=475)
+    radio_lleve = Radiobutton(fallas_ventana, text="Leve", variable=falla, value=1, font=("Times New Roman", 13))
+    radio_lleve.place(x=500, y=525)
+    radio_grave= Radiobutton(fallas_ventana, text="Grave", variable=falla, value=2, font=("Times New Roman", 13))
+    radio_grave.place(x=500, y=575)
+
+    btn_realizar = Button(fallas_ventana, text ='', font=('Times New Roman', 20),command=accion)
+    guardar_cambio = Button(fallas_ventana, text ='Guardar modificacíon', font=('Times New Roman', 20),command=modificar_guardar)
+    
+    #?CASOS
+    #INICIO
+    pedir_codigo.configure(state="disabled")
+    descripcion.configure(state="disabled")
+    radio_lleve.configure(state="disabled")
+    radio_grave.configure(state="disabled")
+    btn_realizar.configure(state="disabled")
+    guardar_cambio.place_forget()
 
     fallas_ventana.mainloop()
 #?============================================================= Menú Principal ===================================================================================================
