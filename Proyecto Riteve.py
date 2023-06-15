@@ -5,12 +5,19 @@
 #!============================================================== Módulos ==========================================================================================================
 import os
 import pickle
-import datetime
+from datetime import datetime
+from datetime import timedelta
+
+# Creación propia
+from arbol import Nodo
+from arbol import Arbol
+
 # GUI
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-#TODO ========================================================= IMPORTS CORREOS =============================================================================================
+
+# Correos
 from validate_email import validate_email
 import ssl
 import smtplib 
@@ -24,18 +31,23 @@ registros = open("numeroscitas.dat", "rb")
 datos = pickle.load(registros)
 registros.close() # No sé si esto es necesario
 
+#* Cración del árbol binario
+arbol_binario = Arbol()
 reteve_principal = Tk()
+
+global num_cita
 num_cita = datos[0]
 
 elegida = IntVar()
 elegida.set(0)
-#todo========================================================================== CAMBIOS PARA CRUD ====================================================================================
+
 lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
-#todo========================================================================== 
+
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
+ 
 
 
 #?============================================================= Secundarias ===================================================================================================
@@ -50,16 +62,75 @@ def programar_cita():
     p_citas = Toplevel()
     p_citas.title("Programar Cita")
     p_citas.state('zoomed')
-    listbox = Listbox(p_citas)
-    num_placa = StringVar() 
+    
+    #! Variables tipo Var
     tipo_revision = IntVar()
-    tipo_vehiculo = Listbox()
+    num_placa = StringVar() 
+    marca_v = StringVar()
+    modelo_v = StringVar()
+    usuario = StringVar()
+    telefono_u = StringVar()
+    correo_u = StringVar()
+    direccion_u = StringVar()
+        
+    #* Frame manual
+    mes_elegido = StringVar()
+    dia_elegido = StringVar()
+    hora_elegido = StringVar()
+    min_elegido = StringVar()
+
+    
+    #?Configuración
+    ajustes = open("configuracion_riteve.dat", "rb")
+    config = pickle.load(ajustes)
+    ajustes.close()
+    
+    num_lineas = config[0]
+    hora_inicio = config[1]
+    hora_fin = config[2]
+    duracion_cita = config[3]
+    dias_reinspeccion = config[4]
+    max_fallas = config[5]
+    iva = config[6]
+    tarifas = config[7]
+    
+    #TODO encontrar la citas de el día actual dentro de un mes
+    #? Fecha actual
+    fecha_actual = datetime.now()
+    con_formato = datetime.strftime(fecha_actual, "%d/%m/%Y  %H:%M:%S")
+
+    anno_actual = fecha_actual.year 
+    dia_actual = fecha_actual.day
+    mes_actual = fecha_actual.month 
+    hora_actual = fecha_actual.hour
+    minutos_actual = fecha_actual.minute
+
+    fecha_uso = datetime(anno_actual, mes_actual, dia_actual, hora_actual, 0)
+
+    hora_siguiente = hora_actual + 1
+    mes_siguiente = mes_actual + 1
+    anno_siguiente = anno_actual
+
+    # En caso de fin de año
+    if mes_siguiente == 13:
+        mes_siguiente = 1
+        anno_siguiente = anno_actual + 1
+        
+    fecha_limite = datetime(anno_siguiente, mes_siguiente, dia_actual, hora_siguiente, minutos_actual)
+    diferencia = timedelta(minutes = duracion_cita)
+    diferencia_provisional = timedelta(minutes = 1)
+    citas_disponibles = []
+    #! Lista de fechas disponibles
+    while fecha_uso < fecha_limite:
+        if fecha_uso.hour >= hora_inicio and fecha_uso.hour < hora_fin:
+            formateada = datetime.strftime(fecha_uso, "%d/%m/%Y  %H:%M:%S")
+            citas_disponibles.append(formateada)
+            fecha_uso += diferencia
+        else:
+            fecha_uso += diferencia_provisional
     
     #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
-    #>! PRUEBA
-    def valor():
-        print(tipo_revision.get())
-        
+       
     #! RESTRICCIONES Y VALIDACIONES DE DATOS
     def long_placa(evento):
         entry_placa = placa.get()
@@ -109,11 +180,16 @@ def programar_cita():
     #! Despliegue de frames
     def habilitar_deshabilitar_frame():
         if elegida.get() == 2:
+            mes.delete(0, END)
+            dia.delete(0, END)
+            hora.delete(0, END)
+            mins.delete(0, END)
             frame_scrollbar.pack(side = TOP, anchor = W, padx = 10)  # Mostrar el frame scrollabar
             frame_manual.pack_forget() # Ocultar frame manual
             citas_frame.update_idletasks() # Esto de acá ajusta la página cuando se despliegan cada uno de los frames
             canvas.config(scrollregion=canvas.bbox("all"))
         else:
+            listbox.selection_clear(0, END)
             frame_scrollbar.pack_forget()  # Ocultar el frame scrollbar
             frame_manual.pack(side = TOP, anchor = W, padx = 10) # Mostrar frame manual
             citas_frame.update_idletasks()
@@ -122,10 +198,48 @@ def programar_cita():
         
     #! Activar boton guardar
     def activar_guardar():
+        # Definir la variable global
+        global datos_cita
+        
         if tipo_revision.get() != 0 and placa.get() and marca.get()  and modelo.get() and propietario.get() and telefono.get() != "" and direccion.get() and elegida.get() != 0 and listbox_vehiculo.curselection():
-            boton_guardar_cita.config(state = NORMAL)
+            # PONER OTRAS VALIDACIONES
+            if elegida.get() == 1: # Meter árbol acá
+                if mes.get() and dia.get() and hora.get() and mins.get():
+                    try:
+                        fecha_prueba = datetime(anno_actual, int(mes.get()), int(mins.get()), int(hora.get()), int(mins.get()), 0)
+                    except ValueError:
+                        messagebox.showerror("", "Fecha u hora no existe.")
+                        return
+                    fecha_formato = datetime.strftime(fecha_prueba, "%d/%m/%Y  %H:%M:%S")
+                    if fecha_formato not in citas_disponibles:
+                        messagebox.showerror("", "Fecha u hora de cita inválidas.")
+                        return
+                    
+                    datos_cita = [cita.cget("text"), tipo_revision.get(), listbox_vehiculo.curselection(), num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), fecha_formato, "PENDIENTE"]
+                    boton_guardar_cita.config(state = NORMAL)
+            elif listbox.curselection(): 
+                datos_cita = [cita.cget("text"), tipo_revision.get(), listbox_vehiculo.curselection(), num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), listbox.curselection(), "PENDIENTE"]
+                boton_guardar_cita.config(state = NORMAL)
         else:
             boton_guardar_cita.config(state = DISABLED)
+            
+    def guardar_citas():
+        arbol_binario.agregar(datos_cita)
+        print(arbol_binario)
+        # Abris archivo 
+        citas = open("registro_de_citas.dat", "wb")
+        arbol_binario.guardar_datos(arbol_binario.raiz, citas)
+        citas.close()
+        
+        # Preguntar si se quiere hacer otra cita
+        if messagebox.askyesno("", "¿Desea agregar otra cita?") == True:
+            global num_cita
+            num_cita += 1
+            p_citas.destroy()
+            programar_cita()
+        else:
+            num_cita += 1
+            p_citas.destroy()
             
     #! Hacer que la ventana se mueva con la rueda del mouse
     def scroll(evento):
@@ -151,14 +265,14 @@ def programar_cita():
     canvas.create_window((0,0), window = citas_frame, anchor = "nw")
 
     # TODO cambio grande: reacomodé todo para que quepa
-
+    #! Indicar fecha 
+    actual = Label(citas_frame, font = ("Times New Roman", 13, "bold"), text = f"Hora actual: {con_formato}")
+    actual.pack(side = TOP, anchor = E)
+    
     #!Label titulo
     frame_tit = Frame(citas_frame)
     frame_tit.pack(side = TOP, anchor = W)
-
-    config_cita = Label(frame_tit, relief = 'solid',  text ='Programe su cita', font=('Times New Roman', 20))
     config_cita = Label(frame_tit, relief = 'solid',  text ='Programe su cita', font=('Times New Roman', 20), width = 15)
-
     config_cita.pack(side = LEFT, padx = 5, pady = 5)
     
     #!Label numero de cita
@@ -177,9 +291,9 @@ def programar_cita():
     tipo_lab = Label(frame_tipo, text= 'Elija su tipo de cita:', font = ("Times New Roman", 13, "bold"))
     tipo_lab.pack(side = LEFT, anchor = W, padx = 10)
 
-    p_rev = Checkbutton(frame_tipo, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height = 5,width = 20,command=valor, font = ("Times New Roman", 13))
+    p_rev = Checkbutton(frame_tipo, text = "Primera vez", variable = tipo_revision, onvalue = 1, offvalue = 0, height = 5,width = 20,font = ("Times New Roman", 13))
     p_rev.pack(side = LEFT, padx = 57)
-    reins = Checkbutton(frame_tipo, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height = 5, width = 20,command=valor, font = ("Times New Roman", 13))
+    reins = Checkbutton(frame_tipo, text = "Reinspección", variable = tipo_revision, onvalue = 2, offvalue = 0, height = 5, width = 20,font = ("Times New Roman", 13))
     reins.pack(side = LEFT)
 
     #? Placa 
@@ -188,7 +302,7 @@ def programar_cita():
     frame_placa.pack(side = TOP, anchor = W, pady = 20)
     tit_placa = Label(frame_placa, text = 'Número de placa:', font = ("Times New Roman", 13, "bold"))
     tit_placa.pack(side = LEFT, padx = 10)
-    placa = Entry(frame_placa,font=('Times New Roman', 13), width = 8,textvariable = num_placa)
+    placa = Entry(frame_placa,font=('Times New Roman', 13), width = 8, textvariable = num_placa)
     placa.pack(side = LEFT, padx = 130)
     
     #todo lo que tenga bind es un cambio
@@ -205,7 +319,7 @@ def programar_cita():
     vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
     elemento = 1
     
-    listbox_vehiculo = Listbox(frame_vehiculo, height = 2, width = 62, font = ("Times New Roman", 13))
+    listbox_vehiculo = Listbox(frame_vehiculo, height = 2, width = 62, font = ("Times New Roman", 13), exportselection = False)
     for vehiculo in vehiculos:
         listbox_vehiculo.insert(elemento, vehiculo)
         elemento += 1
@@ -220,7 +334,7 @@ def programar_cita():
     tit_marca = Label(frame_marca, text = "Marca del vehículo:", font = ("Times New Roman", 13, "bold"))
     tit_marca.pack(side = LEFT)
     
-    marca = Entry(frame_marca, font = ("Times New Roman", 13), width = 15)
+    marca = Entry(frame_marca, font = ("Times New Roman", 13), width = 15, textvariable = marca_v)
     marca.pack(side = LEFT, padx = 120)
     
     marca.bind("<KeyRelease>", long_marca)
@@ -231,7 +345,7 @@ def programar_cita():
     tit_modelo = Label(frame_modelo, text = "Modelo del vehículo:", font = ("Times New Roman", 13, "bold"))
     tit_modelo.pack(side = LEFT)
     
-    modelo = Entry(frame_modelo, font = ("Times New Roman", 13), width = 15)
+    modelo = Entry(frame_modelo, font = ("Times New Roman", 13), width = 15, textvariable = modelo_v)
     modelo.pack(side =LEFT, padx =110)
     
     modelo.bind("<KeyRelease>", long_modelo)
@@ -242,7 +356,7 @@ def programar_cita():
     tit_prop = Label(frame_prop, font = ("Times New Roman", 13, "bold"), text = "Nombre del propietario:")
     tit_prop.pack(side = LEFT)
     
-    propietario = Entry(frame_prop, font = ("Times New Roman", 13), width = 40)
+    propietario = Entry(frame_prop, font = ("Times New Roman", 13), width = 40, textvariable = usuario)
     propietario.pack(side = LEFT, padx = 83)
     
     propietario.bind("<KeyRelease>", long_prop)
@@ -253,7 +367,7 @@ def programar_cita():
     tit_telefono = Label(frame_tele, text = "Número de teléfono:", font = ("Times New Roman", 13, "bold"))
     tit_telefono.pack(side = LEFT)
     
-    telefono = Entry(frame_tele, font = ("Times New Roman", 13), width = 20)
+    telefono = Entry(frame_tele, font = ("Times New Roman", 13), width = 20, textvariable = telefono_u)
     telefono.pack(side =LEFT, padx = 115)
     
     telefono.bind("<KeyRelease>", long_telefono)
@@ -264,7 +378,7 @@ def programar_cita():
     tit_correo = Label(frame_correo, text = "Correo electrónico:", font = ("Times New Roman", 13, "bold"))
     tit_correo.pack(side = LEFT)
     
-    correo = Entry(frame_correo, font = ("Times New Roman", 13), width = 40)
+    correo = Entry(frame_correo, font = ("Times New Roman", 13), width = 40, textvariable = correo_u)
     correo.pack(side =LEFT, padx = 115)
     
     #? Direccion
@@ -273,7 +387,7 @@ def programar_cita():
     tit_direccion = Label(frame_dir, text = "Dirección física:", font = ("Times New Roman", 13, "bold"))
     tit_direccion.pack(side = LEFT)
     
-    direccion = Entry(frame_dir, font = ("Times New Roman", 13), width = 40)
+    direccion = Entry(frame_dir, font = ("Times New Roman", 13), width = 40, textvariable = direccion_u)
     direccion.pack(side = LEFT, padx = 140)
     
     direccion.bind("<KeyRelease>", long_direc)
@@ -297,7 +411,7 @@ def programar_cita():
     boton_aplicar = Button(frame_botones, text = "Aplicar", width = 13, font = ("Times New Roman", 13), bg = "yellow", command = activar_guardar)
     boton_aplicar.pack(side = LEFT)
     
-    boton_guardar_cita = Button(frame_botones,text = "Guardar cita", font = ("Times New Roman", 13), width = 13, bg = "light green", state = DISABLED)
+    boton_guardar_cita = Button(frame_botones,text = "Guardar", font = ("Times New Roman", 13), width = 13, bg = "light green", state = DISABLED, command = guardar_citas)
     boton_guardar_cita.pack(side = LEFT, padx =  20)
     
     
@@ -318,14 +432,14 @@ def programar_cita():
     tit_dia = Label(frame_fecha, text = "Fecha:", font = ("Times New Roman", 13, "bold"))
     tit_dia.pack(side = LEFT)
     
-    dia = Entry(frame_fecha, font = ("Times New Roman", 13), width = 2)
+    dia = Entry(frame_fecha, font = ("Times New Roman", 13), width = 2, textvariable = dia_elegido)
     dia.pack(side = LEFT, padx = 5)
     dia.bind("<KeyRelease>", solo_numeros)
     
     slash = Label(frame_fecha, text = "/", font = ("Times New Roman", 13))
     slash.pack(side = LEFT)
     
-    mes = Entry(frame_fecha, font = ("Times New Roman", 13), width = 2)
+    mes = Entry(frame_fecha, font = ("Times New Roman", 13), width = 2, textvariable = mes_elegido)
     mes.pack(side = LEFT, padx = 5)
     mes.bind("<KeyRelease>", solo_numeros)
     
@@ -337,14 +451,14 @@ def programar_cita():
     tit_hora = Label(frame_hora, text = "Hora:", font = ("Times New Roman", 13, "bold"))
     tit_hora.pack(side = LEFT)
     
-    hora = Entry(frame_hora, font = ("Times New Roman", 13), width = 2)
+    hora = Entry(frame_hora, font = ("Times New Roman", 13), width = 2, textvariable = hora_elegido)
     hora.pack(side = LEFT, padx = 5)
     hora.bind("<KeyRelease>", solo_numeros)
     
     dos_puntos = Label(frame_hora, text = ":", font = ("Times New Roman", 13))
     dos_puntos.pack(side = LEFT, padx = 5)
     
-    mins = Entry(frame_hora, font = ("Times New Roman", 13), width = 2)
+    mins = Entry(frame_hora, font = ("Times New Roman", 13), width = 2, textvariable = min_elegido)
     mins.pack(side = LEFT, padx = 5)
     mins.bind("<KeyRelease>", solo_numeros)
 
@@ -358,7 +472,7 @@ def programar_cita():
     tit_automatico.pack()
 
     # Crear el Listbox dentro del Frame
-    listbox = Listbox(frame_scrollbar)
+    listbox = Listbox(frame_scrollbar, exportselection = False, font = ("Times New Roman", 13))
     listbox.pack(side=LEFT, fill=BOTH)
 
     # Crear el Scrollbar y asociarlo al Listbox
@@ -367,8 +481,8 @@ def programar_cita():
     listbox.config(yscrollcommand=scrollbar.set)
 
     # Agregar elementos al Listbox
-    for i in range(100):
-        listbox.insert(END, f"Elemento {i}")
+    for i in citas_disponibles:
+        listbox.insert(END, f"{i}")
     p_citas.mainloop()
     
 #?============================================================= Configuración =========================================================================================================
@@ -411,7 +525,8 @@ def configuracion():
     #! Guardar configuración         
     def guardar_config():
         if num_lineas.get() and combo_horas1.get() and combo_horas2.get() and mins_revision.get() and max_dias.get() and num_fallas.get() and percent_iva.get() and entry1.get() and entry2.get and entry3.get() and entry4.get() and entry5.get() and entry6.get() and entry7.get() and entry8.get():
-            datos = [lineas.get(), combo_horas1.get(), combo_horas2.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]            
+            horafin_correcta = combo_horas2.current() + combo_horas1.current() +1
+            datos = [lineas.get(), combo_horas1.current(), horafin_correcta, minutos.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]
             ajustes = open("configuracion_riteve.dat", "wb")
             pickle.dump(datos, ajustes)
             ajustes.close()
@@ -460,7 +575,7 @@ def configuracion():
     combo_horas1.place(x = 500, y = 110)
     combo_horas1.bind("<<ComboboxSelected>>", actualizar_opciones)
     
-    combo_horas1.set("6:00 AM")
+    # combo_horas1.set("6:00 AM")
     
     #* Final 
     tit_final = Label(configuracion, text = "Hora final: ", font = ("Times New Roman", 13))
@@ -468,7 +583,7 @@ def configuracion():
     
     combo_horas2 = ttk.Combobox(configuracion)
     combo_horas2.place(x= 500, y = 140)
-    combo_horas2.set("9:00 PM")
+    # combo_horas2.set("9:00 PM")
     
     #? Minutos por cita
     tit_min = Label(configuracion, text = "Minutos por cita de revisión:", font = ("Times New Roman", 13, "bold"))
@@ -634,7 +749,10 @@ def configuracion():
     #? Guardar configuracion
     btn_guardado = Button(configuracion, text = "Aplicar", font = ("Times New Roman", 13), width = 7, bg = "light green", command = guardar_config)
     btn_guardado.place(x = 900, y = 645)
-    configuracion.mainloop()    
+    
+
+    configuracion.mainloop()
+
 #!============================================================= CRUD =============================================================================================================
 def lista_de_fallas():
     fallas_ventana = Toplevel()
@@ -922,10 +1040,9 @@ reteve_principal.geometry('500x640')
 reteve_principal.title('MENU PRINCIPAL')
 
 #! IMAGEN 'Riteve_Nit.png'
-
 img = PhotoImage(file='Riteve_Nit.png')
 fondo_menu = Label(reteve_principal, image = img)
-fondo_menu.place(x=0, y=100, relwidth=1)
+fondo_menu.place(x=0, y= 100, relwidth=1)
 
 titulo_riteve = Label(master = reteve_principal, relief = 'solid',  text ='RETEVE', font=('Times New Roman', 32), width = 9)
 titulo_riteve.place(x=170,y=30)
@@ -942,7 +1059,7 @@ Ingreso.place(x=20,y=220)
 Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
 Revision.place(x = 20, y = 280)
 
-Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command= lista_de_fallas)
+Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = lista_de_fallas)
 Lista_fallas.place(x = 20, y = 340)
 
 Configuracion = Button(reteve_principal, text = "Configuración", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = configuracion)
