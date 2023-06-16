@@ -7,6 +7,7 @@ class Nodo:
         self.lista = lista
         self.izquierdo = None
         self.derecho = None
+        self.cita = lista[1]
 
 # Arma el árbol y define los nodos izquierdo y derecho
 class Arbol:
@@ -40,3 +41,39 @@ class Arbol:
             self.guardar_datos(nodo.izquierdo, archivo)
             pickle.dump(nodo.lista, archivo)
             self.guardar_datos(nodo.derecho, archivo)
+            
+    # Cambiar datos
+    def cambiar_nodo(self, lista):
+        if self.raiz is not None and self.raiz.cita == lista[1]:
+            self.raiz == Nodo(lista)
+        else:
+            self.cambiar_aux(lista, self.raiz)
+    
+    # Busca en los nados para cambiar
+    def cambiar_aux(self, lista, nodo_actual):
+        if nodo_actual is None:
+            return
+        if nodo_actual.izquierdo is not None and self.nodo_actual.izquierdo.cita == lista[1]:
+            nodo_actual.izquierdo = Nodo(lista)
+        elif self.nodo_actual.derecho.cita == lista[1]:
+            nodo_actual.izquierdo = Nodo(lista)
+        elif lista < nodo_actual.lista:
+            self.cambiar_aux(lista, nodo_actual.izquierdo)
+        else:
+            self.cambiar_aux(lista, nodo_actual.derecho)
+            
+                
+    # Buscar nodos
+    def buscar_nodos(self, buscado):
+        return self.buscar_nodos_aux(buscado, self.raiz)
+    
+    # Busca bien en todo el árbol
+    def buscar_nodos_aux(self, cita, nodo_actual):
+        if nodo_actual is None:
+            return
+        if nodo_actual.cita == cita:
+            return nodo_actual.lista
+        elif cita < nodo_actual.cita:
+            return self.buscar_nodos_aux(cita, nodo_actual.izquierdo)
+        else:
+            return self.buscar_nodos_aux(cita, nodo_actual.derecho)
