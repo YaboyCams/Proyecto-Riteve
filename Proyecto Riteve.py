@@ -56,7 +56,65 @@ def solo_numeros(evento):
     texto = evento.widget.get()
     if texto.isdigit() == False:
         evento.widget.delete(0, END)
-        
+#TODO ============================================================= "REVISION DE CORREO REAL" ========================================================================
+def validar_correo(correo):
+    from validate_email_address import validate_email
+    isExists = validate_email(correo, verify=True)
+    return isExists
+def isvalidEmail(email):
+    pattern = "^\S+@\S+\.\S+$"
+    objs = re.search(pattern, email)
+    try:
+        if objs.string == email:
+            return True
+    except:
+        return False
+def envio_correo(destino,caso,persona,hora):
+    email_sender = "emailpython723@gmail.com"
+    email_receiver = destino
+    email_smtp = "smtp.gmail.com" 
+    email_password = "kmhddfxnpxmaylbx"
+    asunto = ""
+    mensaje = ""
+    if caso == "Cita":
+        mensaje += str(persona) + " Este es su correo de confirmación de Revisión Técnica Vehícular" + " a las" + hora
+        asunto += 'Confirmación de cita'
+    if caso == "Aprovado":
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
+        asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
+    if caso == "Reinspeccion":
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
+        asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
+    if caso == "Sacar Circulacion":
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
+        asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
+    subject = asunto
+    body = mensaje
+    em = EmailMessage()
+    em['From'] = email_sender
+    em['To'] = email_receiver
+    em['Subject'] = subject
+    em.set_content(body)
+    #! Envia resultados y Certificado
+    if caso == "Aprovado":
+        #TODO NOMBRE GENERICO
+        with open("Resultados Prueba Riteve.pdf","rb") as f:
+            file_data = f.read()
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Resultados Prueba Riteve")
+        with open("Certificado Prueba Riteve.pdf","rb") as f:
+            file_data = f.read()
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado Prueba Riteve")
+    #! Solo envia resultados
+    if caso == "Reinspeccion" or caso == "Sacar de Circulación":
+        with open("Resultados Prueba Riteve.pdf","rb") as f:
+            file_data = f.read()
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Resultados Prueba Riteve")
+    if caso == "Cita":
+        pass
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL('smtp.gmail.com',465,context=context) as smtp:
+        smtp.login(email_sender, email_password)
+        smtp.sendmail(email_sender, email_receiver, em.as_string())
 #?============================================================= Programar citas =========================================================================================================
 def programar_cita():
     p_citas = Toplevel()
@@ -230,7 +288,9 @@ def programar_cita():
         citas = open("registro_de_citas.dat", "wb")
         arbol_binario.guardar_datos(arbol_binario.raiz, citas)
         citas.close()
-        
+        #TODO EJEMPLO DE FUNCIONAMIENTO
+        envio_correo(correo.get(),"Cita",propietario.get(),"1:00 PM")
+
         # Preguntar si se quiere hacer otra cita
         if messagebox.askyesno("", "¿Desea agregar otra cita?") == True:
             global num_cita
@@ -240,7 +300,7 @@ def programar_cita():
         else:
             num_cita += 1
             p_citas.destroy()
-            
+
     #! Hacer que la ventana se mueva con la rueda del mouse
     def scroll(evento):
         canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
@@ -757,6 +817,7 @@ def configuracion():
 def lista_de_fallas():
     fallas_ventana = Toplevel()
     fallas_ventana.title("Lista de Fallas")
+    fallas_ventana.geometry("1024x740")
     fallas_ventana.state('zoomed')
     codigo = StringVar()
     falla = IntVar()
@@ -795,7 +856,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="Añadir Falla")
     def activar_consultar():
         pedir_codigo.configure(state="normal")
@@ -814,7 +875,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="Consultar Falla")
     def activar_modificar():
         pedir_codigo.configure(state="normal")
@@ -833,9 +894,9 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="BUSCAR FALLA")
-        guardar_cambio.place(x=500, y=750)
+        guardar_cambio.place(x=500, y=650)
     def activar_eliminar():
         pedir_codigo.configure(state="normal")
         descripcion.configure(state="normal")
@@ -853,7 +914,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="ELIMINAR FALLA")
 
     #ADD
@@ -993,32 +1054,32 @@ def lista_de_fallas():
 
 
     tit_code = Label(fallas_ventana, text ='Introduzca su código', font=('Times New Roman', 20))
-    tit_code.place(x=500, y=150)
+    tit_code.place(x=500, y=50)
     pedir_codigo = Entry(fallas_ventana,font=('Times New Roman', 18), width = 15, textvariable=codigo)
-    pedir_codigo.place(x=500, y=200)
+    pedir_codigo.place(x=500, y=100)
     pedir_codigo.bind("<KeyRelease>", largo_codigo)
 
     #!FRAME
     frame_descripcion = Frame(fallas_ventana, width=400, height=200)
-    frame_descripcion.place(x=500, y=300)
+    frame_descripcion.place(x=500, y=200)
     #!SCROLLBAR
     scrollbar = Scrollbar(frame_descripcion)
     scrollbar.pack(side="right", fill="y")
 
     #?Texto box
     tit_descrip = Label(fallas_ventana, text ='Introduzca una descripción', font=('Times New Roman', 20))
-    tit_descrip.place(x=500, y=250)
+    tit_descrip.place(x=500, y=150)
     descripcion = Text(frame_descripcion, height=10, width=40, bg="light cyan", yscrollcommand=scrollbar.set)
     descripcion.pack(side="left", fill="both")
     scrollbar.config(command=descripcion.yview)
 
     #?
     tfalla = Label(fallas_ventana, text ='Tipo de Falla', font=('Times New Roman', 20))
-    tfalla.place(x=500, y=475)
+    tfalla.place(x=500, y=375)
     radio_lleve = Radiobutton(fallas_ventana, text="Leve", variable=falla, value=1, font=("Times New Roman", 13))
-    radio_lleve.place(x=500, y=525)
+    radio_lleve.place(x=500, y=425)
     radio_grave= Radiobutton(fallas_ventana, text="Grave", variable=falla, value=2, font=("Times New Roman", 13))
-    radio_grave.place(x=500, y=575)
+    radio_grave.place(x=500, y=475)
 
     btn_realizar = Button(fallas_ventana, text ='', font=('Times New Roman', 20),command=accion)
     guardar_cambio = Button(fallas_ventana, text ='Guardar modificacíon', font=('Times New Roman', 20),command=modificar_guardar)
@@ -1033,6 +1094,71 @@ def lista_de_fallas():
     guardar_cambio.place_forget()
 
     fallas_ventana.mainloop()
+#TODO ========================================================= TABLERO DE REVISION ==============================================================================================
+def tablero_revision():
+    revision = Toplevel()
+    revision.title("Tablero de Revision")
+    revision.geometry("1024x740")
+
+
+    config = open('configuracion_riteve.dat','rb')
+    dat = pickle.load(config)
+    config.close()
+    lineas = dat[0]
+
+    ident = StringVar()
+    placa = StringVar()
+    falla = StringVar()
+
+    tablero = []
+    for i in range(lineas):
+        fila = []
+        for j in range(5):
+            estacion = Button(revision, text = '', font = ("Times New Roman", 10), width = 7, bg = "light green")
+            estacion.configure(state="disabled")
+            fila.append(estacion)
+        tablero.append(fila)
+    
+    print(len(tablero))
+    lineas_labels = []
+    for i in range(1, lineas + 1):
+        linea = Label(revision,  text ='Linea ' + str(i), font=('Times New Roman', 10), width = 10)
+        lineas_labels.append(linea)
+
+    #Label
+    tit_label = Label(revision, relief = 'solid',  text ='Revision Vehicular', font=('Times New Roman', 16), width = 20)
+    tit_label.place(x=10,y=10)
+
+    #LABEL INSERTAR FRAME
+    tit_com = Label(revision,  text ='COMMANDO:', font=('Times New Roman', 16), width = 20)
+    tit_com.place(x=0 , y= 500)
+    commmando = Entry(revision, font = ("Times New Roman", 13), width = 3)
+    commmando.place(x=200 , y= 500)
+
+    tit_placa = Label(revision,  text ='PLACA:', font=('Times New Roman', 16), width = 20)
+    tit_placa.place(x=0 , y= 550)
+    carro = Entry(revision, font = ("Times New Roman", 13), width = 8)
+    carro.place(x=200 , y=  550)
+
+    tit_fail = Label(revision,  text ='CODIGO FALLA:', font=('Times New Roman', 16), width = 20)
+    tit_fail.place(x=0 , y= 600)
+    falla_code = Entry(revision, font = ("Times New Roman", 13), width = 4)
+    falla_code.place(x=200 , y= 600)
+
+    tit = Label(revision,  text ='INSERTE FRAME:', font=('Times New Roman', 16), width = 20)
+    tit.place(x=500,y=250)
+
+    puesto_1 = Label(revision,  text ='Puesto 1:', font=('Times New Roman', 10), width = 10)
+    puesto_1.place(x=380 , y= 50)
+    puesto_2 = Label(revision,  text ='Puesto 2:', font=('Times New Roman', 10), width = 10)
+    puesto_2.place(x=500 , y= 50)
+    puesto_3 = Label(revision,  text ='Puesto 3:', font=('Times New Roman', 10), width = 10)
+    puesto_3.place(x=620 , y= 50)
+    puesto_4 = Label(revision,  text ='Puesto 4:', font=('Times New Roman', 10), width = 10)
+    puesto_4.place(x=740 , y= 50)
+    puesto_5 = Label(revision,  text ='Puesto 5:', font=('Times New Roman', 10), width = 10)
+    puesto_5.place(x=860 , y= 50)
+
 #?============================================================= Menú Principal ===================================================================================================
 
 
@@ -1056,7 +1182,7 @@ Cancel_citas.place(x=20,y=160)
 Ingreso = Button(reteve_principal, text = "Ingreso de vehículos", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
 Ingreso.place(x=20,y=220)
 
-Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
+Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command=tablero_revision)
 Revision.place(x = 20, y = 280)
 
 Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = lista_de_fallas)
