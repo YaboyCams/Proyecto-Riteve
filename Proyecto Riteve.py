@@ -69,7 +69,7 @@ def isvalidEmail(email):
         return False
     
 #! Enviar correo    
-def envio_correo(destino,caso,persona,hora):
+def envio_correo(destino,caso,persona,dia, hora):
     email_sender = "emailpython723@gmail.com"
     email_receiver = destino
     email_smtp = "smtp.gmail.com" 
@@ -77,16 +77,16 @@ def envio_correo(destino,caso,persona,hora):
     asunto = ""
     mensaje = ""
     if caso == "Cita":
-        mensaje += str(persona) + " Este es su correo de confirmación de Revisión Técnica Vehícular" + " a las" + hora
+        mensaje += "Hola, "+ str(persona) + ". Este es su correo de confirmación de Revisión Técnica Vehícular" + " el día " + dia + " a las " + hora
         asunto += 'Confirmación de cita'
     if caso == "Aprovado":
-        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
+        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     if caso == "Reinspeccion":
-        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
-        asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
+        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
+        asunto += 'Resultados Revicion Técnica Vehícular: ' + str(persona)
     if caso == "Sacar Circulacion":
-        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
+        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     subject = asunto
     body = mensaje
@@ -182,11 +182,11 @@ def programar_cita():
     #! Lista de fechas disponibles
     while fecha_uso < fecha_limite:
         if fecha_uso.hour >= hora_inicio and fecha_uso.hour < hora_fin:
-            #formateada = datetime.strftime(fecha_uso, "%d/%m/%Y  %H:%M:%S")
             citas_disponibles.append(fecha_uso)
             fecha_uso += diferencia
         else:
             fecha_uso += diferencia_provisional
+    
     
     #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
        
@@ -259,9 +259,10 @@ def programar_cita():
         
     #! Activar boton guardar
     def activar_guardar():
-        # Definir la variable global
+        # Definir la variables globales
         global datos_cita
-        
+        global formateada_hora
+        global formateada_dia
         if tipo_revision.get() != 0 and placa.get() and marca.get()  and modelo.get() and propietario.get() and telefono.get() != "" and direccion.get() and elegida.get() != 0 and listbox_vehiculo.curselection():
             # PONER OTRAS VALIDACIONES
             if len(marca.get()) < 3:
@@ -272,6 +273,13 @@ def programar_cita():
                 return
             if len(direccion.get()) < 3:
                 messagebox.showerror("", "Dirección no válida. Vuelva a intentar")
+                return
+            if len(telefono.get()) < 8:
+                messagebox.showerror("", "Teléfono no válido. Vuelva a intentar")
+                return
+            if validar_correo(correo.get()) is not True:
+                messagebox.showerror("", "Correo no válido. Vuelva a intentar")
+                return
             # Sacar el tipo de vehículo (nombre)
             seleccionados = listbox_vehiculo.curselection()
             vehiculo_elegido = listbox_vehiculo.get(seleccionados[0])
@@ -286,13 +294,16 @@ def programar_cita():
                     if fecha_prueba not in citas_disponibles:
                         messagebox.showerror("", "Fecha u hora de cita solicitada inválidas.")
                         return
-                    
+                    formateada_dia = fecha_prueba.strftime("%d/%m/%Y")
+                    formateada_hora = fecha_prueba.strftime("%H:%M:%S")
                     datos_cita = [fecha_prueba, num_cita, p_rev.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
                     boton_guardar_cita.config(state = NORMAL)
                     print(datos_cita)
             elif listbox.curselection(): 
                 hora_seleccionada = listbox.curselection()
                 indice = hora_seleccionada[0]
+                formateada_dia = datetime.strftime(citas_disponibles[indice], "%d/%m/%Y")
+                formateada_hora = datetime.strftime(citas_disponibles[indice], "%H:%M:%S")
                 datos_cita = [citas_disponibles[indice], num_cita, reins.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
                 print(datos_cita)
                 boton_guardar_cita.config(state = NORMAL)
@@ -304,10 +315,10 @@ def programar_cita():
         print(arbol_binario)
         # Abrir archivo 
         citas = open("registro_de_citas.dat", "wb")
-        arbol_binario.guardar_datos(arbol_binario.raiz, citas) #* Tal vez cambio ?
+        arbol_binario.guardar_datos(citas) 
         citas.close()
         #TODO EJEMPLO DE FUNCIONAMIENTO
-        envio_correo(correo.get(),"Cita",propietario.get(),"1:00 PM") #* Cambiar esto
+        envio_correo(correo.get(),"Cita",propietario.get(), formateada_dia, formateada_hora) #* Cambiar esto
         
         # Preguntar si se quiere hacer otra cita
         if messagebox.askyesno("", "¿Desea agregar otra cita?") == True:

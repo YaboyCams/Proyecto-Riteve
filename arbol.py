@@ -36,31 +36,34 @@ class Arbol:
                 
     # Guardar datos en un archivo .dat
     # Así se almacenarán las citas
-    def guardar_datos(self, nodo, archivo):
+    def guardar_datos(self, archivo):
+        return self.guardar_datos_aux(self.raiz, archivo)
+    
+    def guardar_datos_aux(self, nodo, archivo):
         if nodo is not None:
-            self.guardar_datos(nodo.izquierdo, archivo)
+            self.guardar_datos_aux(nodo.izquierdo, archivo)
             pickle.dump(nodo.lista, archivo)
-            self.guardar_datos(nodo.derecho, archivo)
+            self.guardar_datos_aux(nodo.derecho, archivo)
             
     # Cambiar datos
-    def cambiar_nodo(self, lista):
+    def cambiar_nodo(self, lista, argumento):
         if self.raiz is not None and self.raiz.cita == lista[1]:
-            self.raiz == Nodo(lista)
+            self.raiz.lista[-1] == argumento
         else:
             self.cambiar_aux(lista, self.raiz)
     
     # Busca en los nados para cambiar
-    def cambiar_aux(self, lista, nodo_actual):
+    def cambiar_aux(self, lista, nodo_actual, argumento):
         if nodo_actual is None:
             return
         if nodo_actual.izquierdo is not None and self.nodo_actual.izquierdo.cita == lista[1]:
-            nodo_actual.izquierdo = Nodo(lista)
+            nodo_actual.izquierdo.lista[-1] = argumento
         elif self.nodo_actual.derecho.cita == lista[1]:
-            nodo_actual.izquierdo = Nodo(lista)
+            nodo_actual.derecho.lista[-1] = argumento
         elif lista < nodo_actual.lista:
-            self.cambiar_aux(lista, nodo_actual.izquierdo)
+            self.cambiar_aux(lista, nodo_actual.izquierdo, argumento)
         else:
-            self.cambiar_aux(lista, nodo_actual.derecho)
+            self.cambiar_aux(lista, nodo_actual.derecho, argumento)
             
                 
     # Buscar nodos
