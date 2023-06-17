@@ -29,7 +29,7 @@ import socket
 #?============================================================= Programa ====================================================================================================
 registros = open("numeroscitas.dat", "rb")
 datos = pickle.load(registros)
-registros.close() 
+registros.close() # No sé si esto es necesario
 
 #* Cración del árbol binario
 arbol_binario = Arbol()
@@ -41,12 +41,14 @@ num_cita = datos[0]
 elegida = IntVar()
 elegida.set(0)
 
-
 lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
+
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
+ 
+
 
 #?============================================================= Secundarias ===================================================================================================
 #! Verifcar que solo hayan números
@@ -54,9 +56,9 @@ def solo_numeros(evento):
     texto = evento.widget.get()
     if texto.isdigit() == False:
         evento.widget.delete(0, END)
-
-#! Validación de correo
+#TODO ============================================================= "REVISION DE CORREO REAL" ========================================================================
 def validar_correo(correo):
+    from validate_email_address import validate_email
     isExists = validate_email(correo, verify=True)
     return isExists
 def isvalidEmail(email):
@@ -67,9 +69,7 @@ def isvalidEmail(email):
             return True
     except:
         return False
-    
-#! Enviar correo    
-def envio_correo(destino,caso,persona,dia, hora):
+def envio_correo(destino,caso,persona,hora):
     email_sender = "emailpython723@gmail.com"
     email_receiver = destino
     email_smtp = "smtp.gmail.com" 
@@ -77,16 +77,16 @@ def envio_correo(destino,caso,persona,dia, hora):
     asunto = ""
     mensaje = ""
     if caso == "Cita":
-        mensaje += "Hola, "+ str(persona) + ". Este es su correo de confirmación de Revisión Técnica Vehícular" + " el día " + dia + " a las " + hora
+        mensaje += str(persona) + " Este es su correo de confirmación de Revisión Técnica Vehícular" + " a las" + hora
         asunto += 'Confirmación de cita'
     if caso == "Aprovado":
-        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     if caso == "Reinspeccion":
-        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
-        asunto += 'Resultados Revicion Técnica Vehícular: ' + str(persona)
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
+        asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     if caso == "Sacar Circulacion":
-        mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
+        mensaje += str(persona) + "El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     subject = asunto
     body = mensaje
@@ -115,7 +115,6 @@ def envio_correo(destino,caso,persona,dia, hora):
     with smtplib.SMTP_SSL('smtp.gmail.com',465,context=context) as smtp:
         smtp.login(email_sender, email_password)
         smtp.sendmail(email_sender, email_receiver, em.as_string())
-        
 #?============================================================= Programar citas =========================================================================================================
 def programar_cita():
     p_citas = Toplevel()
@@ -144,11 +143,14 @@ def programar_cita():
     config = pickle.load(ajustes)
     ajustes.close()
     
-    
+    num_lineas = config[0]
     hora_inicio = config[1]
     hora_fin = config[2]
     duracion_cita = config[3]
-    
+    dias_reinspeccion = config[4]
+    max_fallas = config[5]
+    iva = config[6]
+    tarifas = config[7]
     
     #TODO encontrar la citas de el día actual dentro de un mes
     #? Fecha actual
@@ -160,13 +162,10 @@ def programar_cita():
     mes_actual = fecha_actual.month 
     hora_actual = fecha_actual.hour
     minutos_actual = fecha_actual.minute
+
+    fecha_uso = datetime(anno_actual, mes_actual, dia_actual, hora_actual, 0)
+
     hora_siguiente = hora_actual + 1
-    
-    if hora_siguiente == 24:
-        hora_siguiente = 0
-
-    fecha_uso = datetime(anno_actual, mes_actual, dia_actual, hora_siguiente, 0)
-
     mes_siguiente = mes_actual + 1
     anno_siguiente = anno_actual
 
@@ -175,18 +174,18 @@ def programar_cita():
         mes_siguiente = 1
         anno_siguiente = anno_actual + 1
         
-    fecha_limite = datetime(anno_siguiente, mes_siguiente, dia_actual, hora_actual, minutos_actual)
+    fecha_limite = datetime(anno_siguiente, mes_siguiente, dia_actual, hora_siguiente, minutos_actual)
     diferencia = timedelta(minutes = duracion_cita)
     diferencia_provisional = timedelta(minutes = 1)
     citas_disponibles = []
     #! Lista de fechas disponibles
     while fecha_uso < fecha_limite:
         if fecha_uso.hour >= hora_inicio and fecha_uso.hour < hora_fin:
-            citas_disponibles.append(fecha_uso)
+            formateada = datetime.strftime(fecha_uso, "%d/%m/%Y  %H:%M:%S")
+            citas_disponibles.append(formateada)
             fecha_uso += diferencia
         else:
             fecha_uso += diferencia_provisional
-    
     
     #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
        
@@ -225,8 +224,6 @@ def programar_cita():
             telefono_valida = entry_telefono[:20]
             telefono.delete(0, END)
             telefono.insert(0, telefono_valida)
-        if entry_telefono.isdigit() == False:
-            telefono.delete(0, END)
             
     def long_direc(evento):
         entry_direccion = direccion.get()
@@ -259,53 +256,27 @@ def programar_cita():
         
     #! Activar boton guardar
     def activar_guardar():
-        # Definir la variables globales
+        # Definir la variable global
         global datos_cita
-        global formateada_hora
-        global formateada_dia
+        
         if tipo_revision.get() != 0 and placa.get() and marca.get()  and modelo.get() and propietario.get() and telefono.get() != "" and direccion.get() and elegida.get() != 0 and listbox_vehiculo.curselection():
             # PONER OTRAS VALIDACIONES
-            if len(marca.get()) < 3:
-                messagebox.showerror("", "Marca no válida. Vuelva a intentar")
-                return
-            if len(propietario.get()) < 6:
-                messagebox.showerror("", "Nombre del propietario no válido. Vuelva a intentar")
-                return
-            if len(direccion.get()) < 3:
-                messagebox.showerror("", "Dirección no válida. Vuelva a intentar")
-                return
-            if len(telefono.get()) < 8:
-                messagebox.showerror("", "Teléfono no válido. Vuelva a intentar")
-                return
-            if validar_correo(correo.get()) is not True:
-                messagebox.showerror("", "Correo no válido. Vuelva a intentar")
-                return
-            # Sacar el tipo de vehículo (nombre)
-            seleccionados = listbox_vehiculo.curselection()
-            vehiculo_elegido = listbox_vehiculo.get(seleccionados[0])
-            if elegida.get() == 1: 
+            if elegida.get() == 1: # Meter árbol acá
                 if mes.get() and dia.get() and hora.get() and mins.get():
                     try:
-                        fecha_prueba = datetime(anno_actual, int(mes.get()), int(dia.get()), int(hora.get()), int(mins.get()), 0)
+                        fecha_prueba = datetime(anno_actual, int(mes.get()), int(mins.get()), int(hora.get()), int(mins.get()), 0)
                     except ValueError:
                         messagebox.showerror("", "Fecha u hora no existe.")
                         return
-                    
-                    if fecha_prueba not in citas_disponibles:
-                        messagebox.showerror("", "Fecha u hora de cita solicitada inválidas.")
+                    fecha_formato = datetime.strftime(fecha_prueba, "%d/%m/%Y  %H:%M:%S")
+                    if fecha_formato not in citas_disponibles:
+                        messagebox.showerror("", "Fecha u hora de cita inválidas.")
                         return
-                    formateada_dia = fecha_prueba.strftime("%d/%m/%Y")
-                    formateada_hora = fecha_prueba.strftime("%H:%M:%S")
-                    datos_cita = [fecha_prueba, num_cita, p_rev.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
+                    
+                    datos_cita = [cita.cget("text"), tipo_revision.get(), listbox_vehiculo.curselection(), num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), fecha_formato, "PENDIENTE"]
                     boton_guardar_cita.config(state = NORMAL)
-                    print(datos_cita)
             elif listbox.curselection(): 
-                hora_seleccionada = listbox.curselection()
-                indice = hora_seleccionada[0]
-                formateada_dia = datetime.strftime(citas_disponibles[indice], "%d/%m/%Y")
-                formateada_hora = datetime.strftime(citas_disponibles[indice], "%H:%M:%S")
-                datos_cita = [citas_disponibles[indice], num_cita, reins.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
-                print(datos_cita)
+                datos_cita = [cita.cget("text"), tipo_revision.get(), listbox_vehiculo.curselection(), num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), listbox.curselection(), "PENDIENTE"]
                 boton_guardar_cita.config(state = NORMAL)
         else:
             boton_guardar_cita.config(state = DISABLED)
@@ -313,31 +284,23 @@ def programar_cita():
     def guardar_citas():
         arbol_binario.agregar(datos_cita)
         print(arbol_binario)
-        # Abrir archivo 
+        # Abris archivo 
         citas = open("registro_de_citas.dat", "wb")
-        arbol_binario.guardar_datos(citas) 
+        arbol_binario.guardar_datos(arbol_binario.raiz, citas)
         citas.close()
         #TODO EJEMPLO DE FUNCIONAMIENTO
-        envio_correo(correo.get(),"Cita",propietario.get(), formateada_dia, formateada_hora) #* Cambiar esto
-        
+        envio_correo(correo.get(),"Cita",propietario.get(),"1:00 PM")
+
         # Preguntar si se quiere hacer otra cita
         if messagebox.askyesno("", "¿Desea agregar otra cita?") == True:
             global num_cita
             num_cita += 1
-            # Actualizar el .dat
-            registro_num = open("numeroscitas.dat", "wb")
-            pickle.dump([num_cita + 1], registro_num)
-            registro_num.close()
             p_citas.destroy()
             programar_cita()
         else:
-            # Actualizar el .dat
             num_cita += 1
-            registro_num = open("numeroscitas.dat", "wb")
-            pickle.dump([num_cita + 1], registro_num)
-            registro_num.close()
             p_citas.destroy()
-            
+
     #! Hacer que la ventana se mueva con la rueda del mouse
     def scroll(evento):
         canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
@@ -501,7 +464,6 @@ def programar_cita():
     automatico = Radiobutton(frame_fyh, text = "Automático", font = ("Times New Roman", 13), value  = 2, variable = elegida, command = habilitar_deshabilitar_frame)
     automatico.pack(side = LEFT, padx  =40)
     
-    elegida.set(None) # Esto es para que cuando se cierre prgrmar citas no se quede seleccionado uno de los radiobuttons
     #? Botnes de guardado y de salida
     frame_botones = Frame(citas_frame)
     frame_botones.pack(side = BOTTOM, anchor = CENTER, pady = 10)
@@ -518,6 +480,10 @@ def programar_cita():
     
     tit_manual = Label(frame_manual, text = "Introduzca fecha y hora:", font = ("Times New Roman", 13, "bold"))
     tit_manual.pack()
+    
+    #* Activar cuando se haga la configración
+    """nota = Label(frame_manual, text = f"La citas están dispobles cada {configuracion[-1]} minutos desde las {configuracion[]} hasta las {configuracion[]}", font = ("Times New Roman", 13))
+    nota.pack(side = LEFT)"""
     
     # Frame de fecha
     frame_fecha = Frame(frame_manual)
@@ -619,9 +585,8 @@ def configuracion():
     #! Guardar configuración         
     def guardar_config():
         if num_lineas.get() and combo_horas1.get() and combo_horas2.get() and mins_revision.get() and max_dias.get() and num_fallas.get() and percent_iva.get() and entry1.get() and entry2.get and entry3.get() and entry4.get() and entry5.get() and entry6.get() and entry7.get() and entry8.get():
-            horafin_correcta = combo_horas2.current() + combo_horas1.current() + 1
+            horafin_correcta = combo_horas2.current() + combo_horas1.current() +1
             datos = [lineas.get(), combo_horas1.current(), horafin_correcta, minutos.get(), dias_rev.get(), fallas_max.get(), iva.get(), [var1.get(), var2.get(), var3.get(), var4.get(), var5.get(), var6.get(), var7.get(), var8.get()]]
-            
             ajustes = open("configuracion_riteve.dat", "wb")
             pickle.dump(datos, ajustes)
             ajustes.close()
@@ -852,6 +817,7 @@ def configuracion():
 def lista_de_fallas():
     fallas_ventana = Toplevel()
     fallas_ventana.title("Lista de Fallas")
+    fallas_ventana.geometry("1024x740")
     fallas_ventana.state('zoomed')
     codigo = StringVar()
     falla = IntVar()
@@ -890,7 +856,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="Añadir Falla")
     def activar_consultar():
         pedir_codigo.configure(state="normal")
@@ -909,7 +875,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="Consultar Falla")
     def activar_modificar():
         pedir_codigo.configure(state="normal")
@@ -928,9 +894,9 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="BUSCAR FALLA")
-        guardar_cambio.place(x=500, y=750)
+        guardar_cambio.place(x=500, y=650)
     def activar_eliminar():
         pedir_codigo.configure(state="normal")
         descripcion.configure(state="normal")
@@ -948,7 +914,7 @@ def lista_de_fallas():
         radio_lleve.deselect()
         radio_grave.deselect()
 
-        btn_realizar.place(x=500, y=650)
+        btn_realizar.place(x=500, y=550)
         btn_realizar.configure(text="ELIMINAR FALLA")
 
     #ADD
@@ -1088,32 +1054,32 @@ def lista_de_fallas():
 
 
     tit_code = Label(fallas_ventana, text ='Introduzca su código', font=('Times New Roman', 20))
-    tit_code.place(x=500, y=150)
+    tit_code.place(x=500, y=50)
     pedir_codigo = Entry(fallas_ventana,font=('Times New Roman', 18), width = 15, textvariable=codigo)
-    pedir_codigo.place(x=500, y=200)
+    pedir_codigo.place(x=500, y=100)
     pedir_codigo.bind("<KeyRelease>", largo_codigo)
 
     #!FRAME
     frame_descripcion = Frame(fallas_ventana, width=400, height=200)
-    frame_descripcion.place(x=500, y=300)
+    frame_descripcion.place(x=500, y=200)
     #!SCROLLBAR
     scrollbar = Scrollbar(frame_descripcion)
     scrollbar.pack(side="right", fill="y")
 
     #?Texto box
     tit_descrip = Label(fallas_ventana, text ='Introduzca una descripción', font=('Times New Roman', 20))
-    tit_descrip.place(x=500, y=250)
+    tit_descrip.place(x=500, y=150)
     descripcion = Text(frame_descripcion, height=10, width=40, bg="light cyan", yscrollcommand=scrollbar.set)
     descripcion.pack(side="left", fill="both")
     scrollbar.config(command=descripcion.yview)
 
     #?
     tfalla = Label(fallas_ventana, text ='Tipo de Falla', font=('Times New Roman', 20))
-    tfalla.place(x=500, y=475)
+    tfalla.place(x=500, y=375)
     radio_lleve = Radiobutton(fallas_ventana, text="Leve", variable=falla, value=1, font=("Times New Roman", 13))
-    radio_lleve.place(x=500, y=525)
+    radio_lleve.place(x=500, y=425)
     radio_grave= Radiobutton(fallas_ventana, text="Grave", variable=falla, value=2, font=("Times New Roman", 13))
-    radio_grave.place(x=500, y=575)
+    radio_grave.place(x=500, y=475)
 
     btn_realizar = Button(fallas_ventana, text ='', font=('Times New Roman', 20),command=accion)
     guardar_cambio = Button(fallas_ventana, text ='Guardar modificacíon', font=('Times New Roman', 20),command=modificar_guardar)
@@ -1128,14 +1094,42 @@ def lista_de_fallas():
     guardar_cambio.place_forget()
 
     fallas_ventana.mainloop()
-    
-#? ========================================================= TABLERO DE REVISION ==============================================================================================
+#TODO ========================================================= TABLERO DE REVISION ==============================================================================================
 def tablero_revision():
     revision = Toplevel()
     revision.title("Tablero de Revision")
     revision.geometry("1024x740")
 
-
+    #FUNCIONES SECUNDARIAS ===============================================================================================================
+    def largo_placa(evento):
+        entry_modelo = placa.get()
+        if len(str(entry_modelo)) > 8:
+            modelo_valido = str(entry_modelo)[:8]
+            carro.delete(0, END)
+            carro.insert(0, modelo_valido)
+    def largo_comand(evento):
+        entry_modelo = ident.get()
+        if len(str(entry_modelo)) > 1:
+            modelo_valido = str(entry_modelo)[:1]
+            commmando.delete(0, END)
+            commmando.insert(0, modelo_valido)
+    def validar_comando(evento):
+        command = ident.get()
+        if command in "FETU":
+            match command:
+                case "F":
+                    pass
+                case "E":
+                    pass
+                case "T":
+                    T_commando()
+                case "U":
+                    U_commando()
+                                                                                
+        else:
+            messagebox.showinfo("Error","Commando No existe") 
+    #FUNCIONES SECUNDARIAS ===============================================================================================================
+    #?CARGA DE DATOS Y FUNCIONAMIENTO ====================================================================================================        
     config = open('configuracion_riteve.dat','rb')
     dat = pickle.load(config)
     config.close()
@@ -1149,7 +1143,7 @@ def tablero_revision():
     for i in range(lineas):
         fila = []
         for j in range(5):
-            estacion = Button(revision, text = '', font = ("Times New Roman", 10), width = 7, bg = "light green")
+            estacion = Button(revision, text = '', font = ("Times New Roman", 10), width = 7, height= 2, bg = "light green")
             estacion.configure(state="disabled")
             fila.append(estacion)
         tablero.append(fila)
@@ -1159,29 +1153,34 @@ def tablero_revision():
     for i in range(1, lineas + 1):
         linea = Label(revision,  text ='Linea ' + str(i), font=('Times New Roman', 10), width = 10)
         lineas_labels.append(linea)
+    #! Se hace la cola de revisión // ARBOL
+    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','321JKL']
+    cola_revision = {}
 
-    #Label
+    #?Label
     tit_label = Label(revision, relief = 'solid',  text ='Revision Vehicular', font=('Times New Roman', 16), width = 20)
     tit_label.place(x=10,y=10)
 
-    #LABEL INSERTAR FRAME
+    #LABEL Y ENTRYS CODIGO
     tit_com = Label(revision,  text ='COMMANDO:', font=('Times New Roman', 16), width = 20)
     tit_com.place(x=0 , y= 500)
-    commmando = Entry(revision, font = ("Times New Roman", 13), width = 3)
+    commmando = Entry(revision, font = ("Times New Roman", 13), width = 3, textvariable= ident)
     commmando.place(x=200 , y= 500)
+    commmando.bind("<KeyRelease>", largo_comand)
+    commmando.bind("<Return>", validar_comando)
 
     tit_placa = Label(revision,  text ='PLACA:', font=('Times New Roman', 16), width = 20)
     tit_placa.place(x=0 , y= 550)
-    carro = Entry(revision, font = ("Times New Roman", 13), width = 8)
+    carro = Entry(revision, font = ("Times New Roman", 13), width = 8, textvariable=placa)
     carro.place(x=200 , y=  550)
+    carro.bind("<KeyRelease>", largo_placa)
 
     tit_fail = Label(revision,  text ='CODIGO FALLA:', font=('Times New Roman', 16), width = 20)
     tit_fail.place(x=0 , y= 600)
-    falla_code = Entry(revision, font = ("Times New Roman", 13), width = 4)
+    falla_code = Entry(revision, font = ("Times New Roman", 13), width = 4, textvariable=falla)
     falla_code.place(x=200 , y= 600)
 
     tit = Label(revision,  text ='INSERTE FRAME:', font=('Times New Roman', 16), width = 20)
-    tit.place(x=500,y=250)
 
     puesto_1 = Label(revision,  text ='Puesto 1:', font=('Times New Roman', 10), width = 10)
     puesto_1.place(x=380 , y= 50)
@@ -1194,7 +1193,96 @@ def tablero_revision():
     puesto_5 = Label(revision,  text ='Puesto 5:', font=('Times New Roman', 10), width = 10)
     puesto_5.place(x=860 , y= 50)
 
+
+    #!================== ESTO CAMBIA CON FRAME =======================================
+    yx = 50
+
+    for lista in tablero:
+        yx += 50
+        xz = 380
+        
+        for boton in lista:
+            boton.place(x=xz, y=yx)
+            boton.configure(text="")
+            xz += 120
+    yx = 100
+    xz = 260
+    for label in lineas_labels:
+        label.place(x = 260, y=yx)
+        yx += 50
+    #!======================================== COMANDOS ==================================
+    def T_commando():
+        #PRIMERA ENTRADA DE LOS AUTOS
+        if cola_revision == {}:
+            auto = placa.get()
+            entrar = cola_autos[-1]
+            if auto == entrar:
+                admitir = lineas
+                for lista in tablero:
+                    expediente = cola_autos.pop()
+                    cola_revision[expediente] = [1,[],"Pendiente"]
+                    boton = lista[0]
+                    boton.config(text=expediente)
+                print(cola_autos)
+                print(cola_revision)
+            else:
+                messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA PRIMERO EN LA COLA DE ESPERA")
+
+        if cola_revision != {}:
+            #REVISA QUE NO HAY AUTOMOVILES EN LA LINEA 5
+            for lista in tablero:
+                boton = lista[4]
+                lleno = boton.cget("text")
+                if lleno == "":
+                    pass
+                else:
+                    messagebox.showinfo("ERROR","HAY AUTOMOVILES EN EL PUESTO 5 Y NO SE PUEDEN MOVER AUTOMOVILES ")
+            #COLA DE ESPERA
+            auto = placa.get()
+            if auto in cola_autos:
+                entrar = cola_autos[-1]
+                if auto == entrar:
+                    pass
+                else:
+                    messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA PRIMERO EN LA COLA DE ESPERA")
+            #COLA DE REVISION
+            if auto in cola_autos:
+                mover = cola_autos[auto]
+
+            else:
+                messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA EN NINGUNA COLA DE ESPERA O REVISION")
+            #revisa que vaya de primero en la cola de espera
+    def U_commando():
+        auto = placa.get()
+        if auto in cola_autos:
+            messagebox("¡ATENCION!","EL AUTO NO SE ENCUENTRA EN LA COLA DE REVISIÓN")
+        if auto not in cola_revision:
+            messagebox("¡ATENCION!","EL AUTO NO SE ENCUENTRA EN LA COLA DE REVISIÓN")
+        else:
+            for lista in tablero:
+                for i,boton in enumerate(lista):
+                    texto = boton.cget("text")
+                    if texto != auto:
+                        pass
+                    if texto == auto:
+                        b2 = lista[i+1]
+                        siguiente = b2.cget("text")
+                        if siguiente == "":
+                            b2.configure(text="☯")
+                            break
+                        else:
+                            messagebox("¡ATENCION!","EL AUTO NO SE PUEDE MOVER AL SIGUIENTE PUESTO DE REVISION")
+            for lista in tablero:
+                for boton in enumerate(lista):
+                    texto = boton.cget("text")
+                    if texto == "☯":
+                        boton.configure(text=auto)
+
+                
+    
+
 #?============================================================= Menú Principal ===================================================================================================
+
 
 reteve_principal.geometry('500x640')
 reteve_principal.title('MENU PRINCIPAL')
@@ -1216,7 +1304,7 @@ Cancel_citas.place(x=20,y=160)
 Ingreso = Button(reteve_principal, text = "Ingreso de vehículos", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3)
 Ingreso.place(x=20,y=220)
 
-Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = tablero_revision)
+Revision = Button(reteve_principal, text = "Tablero de revisión", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command=tablero_revision)
 Revision.place(x = 20, y = 280)
 
 Lista_fallas = Button(reteve_principal, text = "Lista de fallas", font = ("Times New Roman", 10), bg = "snow",width = 16, height = 3, command = lista_de_fallas)
