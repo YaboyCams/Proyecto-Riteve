@@ -35,32 +35,39 @@ registros.close()
 arbol_binario = Arbol()
 reteve_principal = Tk()
 
-# Variables globales
+#* Variables globales
 global num_cita
-global registro_horas
-global registro_placas
+
 global cola_espera
 global cola_revision
+global historial_citas
 
 
 num_cita = datos[0]
+historial_citas = datos[1]
+print(historial_citas)
+
+for c in historial_citas:
+    arbol_binario.agregar(c)
 
 elegida = IntVar()
 elegida.set(0)
 
-registro_placas = []
-registro_horas = []
 
 lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
+
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
 colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
 #TODO ======================== CAMBIO ==========================
 cola_revision = {}
 #TODO ======================== CAMBIO ==========================
+
+
+
 #?============================================================= Secundarias ===================================================================================================
 #! Verifcar que solo hayan números
 def solo_numeros(evento):
@@ -200,10 +207,15 @@ def programar_cita():
         else:
             fecha_uso += diferencia_provisional
             
-    # Límite de personas a la losma hora
+    # Límite de personas a la misma hora
     for f in citas_disponibles:
-        if registro_horas.count(f) >= num_filas:
-            citas_disponibles.remove(f)
+        contador = 0
+        for c in historial_citas:
+            if c[0] == f:
+                contador += 1
+            if contador == num_filas:
+                citas_disponibles.remove(f)
+                
     #*========================================================= FUNCIONES AUXILIARES ==============================================================================================================
        
     #! RESTRICCIONES Y VALIDACIONES DE DATOS
@@ -297,10 +309,23 @@ def programar_cita():
             if validar_correo(correo.get()) is not True:
                 messagebox.showerror("", "Correo no válido. Vuelva a intentar.")
                 return
-            if placa.get() in registro_placas and not(tipo_revision.get() == 2):
-                messagebox.showerror("", "Placa no válida. Vuelva a intentar.")
-                return
-            
+            for c in historial_citas:
+                if c[4] == num_placa.get() and tipo_revision.get() == 1 and c[-1] == "REINSPECCIÓN":
+                    messagebox.showerror("", "Marque la opción reinspección para continuar.")
+                    return
+                if c[4] == num_placa.get() and c[-1] == "SACAR DE CIRCULACIÓN":
+                    messagebox.showerror("", "Su vehículo debe sacarse de circulación.")
+                    return
+                if c[4] == num_placa.get() and tipo_revision.get() == 2 and c[-1] != "REINSPECCIÓN":
+                    messagebox.showerror("", "Este vehículo todavía no fue autorizado para reinspección.")
+                    return
+                if c[4] == num_placa.get() and tipo_revision.get() == 1 and c[-1] == "PENDIENTE":
+                    messagebox.showerror("", "Placa ya está registrada.")
+                    return
+            if tipo_revision.get() == 1:
+                tipo = "Primera vez"
+            else:
+                tipo = "Reinspección"
             # Sacar el tipo de vehículo (nombre)
             seleccionados = listbox_vehiculo.curselection()
             vehiculo_elegido = listbox_vehiculo.get(seleccionados[0])
@@ -317,7 +342,7 @@ def programar_cita():
                         return
                     formateada_dia = fecha_prueba.strftime("%d/%m/%Y")
                     formateada_hora = fecha_prueba.strftime("%H:%M:%S")
-                    datos_cita = [fecha_prueba, num_cita, p_rev.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
+                    datos_cita = [fecha_prueba, num_cita, tipo, vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
                     boton_guardar_cita.config(state = NORMAL)
                     print(datos_cita)
             elif listbox.curselection(): 
@@ -326,48 +351,40 @@ def programar_cita():
                 fecha_prueba = citas_disponibles[indice] 
                 formateada_dia = datetime.strftime(fecha_prueba, "%d/%m/%Y") # Esto es para el correo
                 formateada_hora = datetime.strftime(fecha_prueba, "%H:%M:%S")
-                datos_cita = [fecha_prueba, num_cita, reins.cget("text"), vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
+                datos_cita = [fecha_prueba, num_cita, tipo, vehiculo_elegido, num_placa.get(), marca_v.get(), modelo_v.get(), usuario.get(), telefono_u.get(), correo_u.get(), direccion_u.get(), "PENDIENTE"]
                 print(datos_cita)
-                if placa.get() in registro_placas and tipo_revision.get() == 2:
-                    primera_cita = arbol_binario.buscar_placa(num_cita, num_placa.get())
-                    primera_vez = arbol_binario.buscar_nodos(primera_cita)
-                    primera_fecha = primera_vez[0]
+            for c in historial_citas:
+                if tipo_revision.get() == 2 and datos_cita[4] == c[4] and c[-1] == "REINSPECCIÓN":
+                    primera_fecha = c[0]
                     if fecha_prueba <= primera_fecha:
-                        messagebox.showerror("", "Fecha de reinspección debe ser después de la cita de revisón pasada.")
+                        messagebox.showerror("", "Fecha de reinspección debe ser después de la cita de revisión pasada.")
                         return
-                boton_guardar_cita.config(state = NORMAL)
+                    break
+            boton_guardar_cita.config(state = NORMAL)
         else:
             boton_guardar_cita.config(state = DISABLED)
             
     def guardar_citas():
+        global num_cita
         arbol_binario.agregar(datos_cita)
         # Abrir archivo 
         citas = open("registro_de_citas.dat", "wb")
         arbol_binario.guardar_datos(citas) 
         citas.close()
-        registro_horas.append(fecha_prueba)
-        registro_placas.append(num_placa.get())      
-        print(registro_placas) 
+        historial_citas.append(datos_cita)
+        print(historial_citas) 
+        registro_num = open("numeroscitas.dat", "wb")
+        pickle.dump([num_cita + 1, historial_citas], registro_num)
+        registro_num.close()
         # envío de correo
         envio_correo(correo.get(),"Cita",propietario.get(), formateada_dia, formateada_hora) #* Cambiar esto
         
         # Preguntar si se quiere hacer otra cita
         if messagebox.askyesno("", "¿Desea agregar otra cita?") == True:
-            # Llamar variable global
-            global num_cita
-            
-            # Actualizar el .dat
-            registro_num = open("numeroscitas.dat", "wb")
-            pickle.dump([num_cita + 1], registro_num)
-            registro_num.close()
             p_citas.destroy()
             num_cita += 1
             programar_cita()
         else:
-            # Actualizar el .dat
-            registro_num = open("numeroscitas.dat", "wb")
-            pickle.dump([num_cita + 1], registro_num)
-            registro_num.close()
             num_cita += 1
             p_citas.destroy()
             
@@ -1183,16 +1200,12 @@ def tablero_revision():
             commmando.insert(0, modelo_valido)
     def validar_comando(evento):
         command = ident.get()
-        revisado = placa.get()
-        if revisado == "":
-            messagebox.showinfo('ERROR', 'NO SE HA INGRESADO UNA PLACA')
-            return
         if command in "FETU":
             match command:
                 case "F":
-                    F_commando()
+                    pass
                 case "E":
-                    E_commando()
+                    pass
                 case "T":
                     T_commando()
                 case "U":
@@ -1200,6 +1213,10 @@ def tablero_revision():
                                                                                 
         else:
             messagebox.showinfo("Error","Commando No existe") 
+    
+    #! Hacer que la ventana se mueva con la rueda del mouse
+    def scroll(evento):
+        canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
     #FUNCIONES SECUNDARIAS ===============================================================================================================
     #?CARGA DE DATOS Y FUNCIONAMIENTO ====================================================================================================        
     config = open('configuracion_riteve.dat','rb')
@@ -1209,25 +1226,12 @@ def tablero_revision():
 
     ident = StringVar()
     placa = StringVar()
-    falla = StringVar()
-
-    tablero = []
-    for i in range(lineas):
-        fila = []
-        for j in range(5):
-            estacion = Button(revision, text = '', font = ("Times New Roman", 10), width = 7, height= 2, bg = "light green")
-            estacion.configure(state="disabled")
-            fila.append(estacion)
-        tablero.append(fila)
+    falla = StringVar()   
     
-    print(len(tablero))
-    lineas_labels = []
-    for i in range(1, lineas + 1):
-        linea = Label(revision,  text ='Linea ' + str(i), font=('Times New Roman', 10), width = 10)
-        lineas_labels.append(linea)
     #! Se hace la cola de revisión // ARBOL
-    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','CJS002']
-    
+    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','321JKL']
+    cola_revision = {}
+
     #?Label
     tit_label = Label(revision, relief = 'solid',  text ='Revision Vehicular', font=('Times New Roman', 16), width = 20)
     tit_label.place(x=10,y=10)
@@ -1266,21 +1270,38 @@ def tablero_revision():
 
 
     #!================== ESTO CAMBIA CON FRAME =======================================
-    yx = 50
-
-    for lista in tablero:
-        yx += 50
-        xz = 380
-        
-        for boton in lista:
-            boton.place(x=xz, y=yx)
-            boton.configure(text="")
-            xz += 120
-    yx = 100
-    xz = 260
-    for label in lineas_labels:
-        label.place(x = 260, y=yx)
-        yx += 50
+    
+    frame_scrollbar = Frame(revision)
+    frame_scrollbar.place(x = 250, y = 80, width = 730, height = 400)
+    
+    canvas = Canvas(frame_scrollbar, bg = "red")
+    canvas.pack(side = LEFT, fill = BOTH, expand = True)
+    
+    scrollbar = ttk.Scrollbar(frame_scrollbar, orient = VERTICAL, command=canvas.yview)
+    scrollbar.pack(side = RIGHT, fill = Y)
+    scrollbar.bind_all("<MouseWheel>", scroll)
+    
+    canvas.configure(yscrollcommand=scrollbar.set)
+    
+    marco_interno = Frame(frame_scrollbar)
+    canvas.create_window((0,0), window = marco_interno, anchor = NW)
+    
+    tablero = []
+    for i in range(lineas):
+        frame_linea = Frame(marco_interno)
+        frame_linea.pack(side = TOP, anchor = W, pady = 10)
+        label= Label(frame_linea, text=f"Línea {i+1}")
+        label.pack(side = LEFT, padx = 10)
+        fila = []
+        for j in range(5):
+            estacion = Button(frame_linea, text = "", font=('Times New Roman', 10), width = 7, height = 2, bg = "light green", state = DISABLED)
+            estacion.pack(side = LEFT, padx = 35)
+            fila.append(estacion)
+        tablero.append(fila)
+    
+    marco_interno.update_idletasks()
+    canvas.configure(scrollregion=canvas.bbox("all"))
+    
     #!======================================== COMANDOS ==================================
     def T_commando():
         #PRIMERA ENTRADA DE LOS AUTOS
@@ -1526,8 +1547,6 @@ def tablero_revision():
             else:
                 pass
 
-    
-        
 #?============================================================= Cancelar citas ============================================================================================================
 def cancelar_cita():
     c_citas = Toplevel()
@@ -1544,19 +1563,27 @@ def cancelar_cita():
     #* Función cancelar
     def cancelar():
         # Validaciones
-        if var_placa.get() in colas_espera: #! Otra posible corrección
-            colas_espera.pop(var_placa)
-        if var_placa.get() in cola_revision: #! Posible corrección futura (cuando se cree cola revisión)
+        """if var_placa.get() in cola_espera: #! Otra posible corrección
+            cola_espera.pop(var_placa)"""
+        """if var_placa.get() in cola_revision: #! Posible corrección futura (cuando se cree cola revisión)
             messagebox.showerror("", "No se puede eliminar, ya está en revisón.")
-            return
+            return"""
         datos_cita = arbol_binario.buscar_nodos(int(var_cita.get()))
         if datos_cita == None:
             messagebox.showerror("","Esta cita no existe. Vuélvalo a intentar.")
             return
         # Cambio
+        if var_placa.get() != datos_cita[4]:
+            messagebox.showerror("","Esta placa no corresponde a la de la cita. Vuélvalo a intentar.")
+            return
         if datos_cita[-1] == "PENDIENTE":
-            arbol_binario.cambiar_estado(datos_cita, "CANCELADO")
-            messagebox.showinfo("","Cita cancelada existosamente.")
+            if messagebox.askyesno("", "¿Está seguro de querer cancelar la cita?") == True:
+                arbol_binario.cambiar_estado(datos_cita, "CANCELADA")
+                messagebox.showinfo("","Cita cancelada existosamente.")
+                entry_cita.delete(0, END)
+                entry_placa.delete(0, END)
+            else:
+                return
         else:
             messagebox.showerror("", "Cita ya antes cancelada.")
     
@@ -1607,6 +1634,7 @@ def ingreso_vehiculos():
     if len(colas_espera) == 0:
         for f in range(num_filas):
             colas_espera.append([])
+    print(colas_espera)
 
     
     #* Ingresar placa a la cola:
