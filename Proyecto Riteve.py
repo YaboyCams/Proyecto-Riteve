@@ -38,14 +38,13 @@ reteve_principal = Tk()
 #* Variables globales
 global num_cita
 
-global cola_espera
+global colas_espera
 global cola_revision
 global historial_citas
 
 
 num_cita = datos[0]
 historial_citas = datos[1]
-print(historial_citas)
 
 for c in historial_citas:
     arbol_binario.agregar(c)
@@ -1203,9 +1202,9 @@ def tablero_revision():
         if command in "FETU":
             match command:
                 case "F":
-                    pass
+                    F_commando()
                 case "E":
-                    pass
+                    E_commando()
                 case "T":
                     T_commando()
                 case "U":
@@ -1324,7 +1323,7 @@ def tablero_revision():
                     if lineas:
                         expediente = lineas.pop(-1)
                         print(expediente)
-                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        cola_revision[expediente] = [1, [], "PENDIENTE"]
                         boton = tablero[i][0]
                         boton.config(text=expediente)
                         pass
@@ -1390,7 +1389,7 @@ def tablero_revision():
                     if lineas:
                         expediente = lineas.pop(-1)
                         print(expediente)
-                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        cola_revision[expediente] = [1, [], "PENDIENTE"]
                         boton = tablero[i][0]
                         boton.config(text=expediente)
                         pass
@@ -1439,7 +1438,7 @@ def tablero_revision():
                     if lineas:
                         expediente = lineas.pop(-1)
                         print(expediente)
-                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        cola_revision[expediente] = [1, [], "PENDIENTE"]
                         boton = tablero[i][0]
                         boton.config(text=expediente)
                         pass
@@ -1517,7 +1516,7 @@ def tablero_revision():
             estado = cola_revision[auto][2]
             if fallas_asig == []:
                 # Caso sin fallas
-                estado = "Aprovado"
+                estado = "APROBADA"
             else:
                 Leves = []
                 Graves = []
@@ -1528,12 +1527,12 @@ def tablero_revision():
                         Leves.append([descripcion,codigo])
                     if tipo == 2:
                         Graves.append([descripcion,codigo])
-                if len(Graves) > 3:
-                    estado = "Sacar Circulacion"
+                if len(Graves) > 3: #! cambio a arbol binario va acá
+                    estado = "SACAR DE CIRCULACIÓN"
                 if len(Graves) <= 1 and len(Graves) <= 3:
-                    estado = "Reinspeccion"
+                    estado = "REINSPECCIÓN"
                 if len(Graves) ==  0:
-                    estado = "Aprovado"
+                    estado = "APROBADA"
 
                     
     def buscar_info(auto):
