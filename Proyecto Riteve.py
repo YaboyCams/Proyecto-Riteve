@@ -56,10 +56,11 @@ Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
-
-colas_espera = []
-colas_revision = []
-
+#TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
+colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
+#TODO ======================== CAMBIO ==========================
+cola_revision = {}
+#TODO ======================== CAMBIO ==========================
 #?============================================================= Secundarias ===================================================================================================
 #! Verifcar que solo hayan números
 def solo_numeros(evento):
@@ -1182,12 +1183,16 @@ def tablero_revision():
             commmando.insert(0, modelo_valido)
     def validar_comando(evento):
         command = ident.get()
+        revisado = placa.get()
+        if revisado == "":
+            messagebox.showinfo('ERROR', 'NO SE HA INGRESADO UNA PLACA')
+            return
         if command in "FETU":
             match command:
                 case "F":
-                    pass
+                    F_commando()
                 case "E":
-                    pass
+                    E_commando()
                 case "T":
                     T_commando()
                 case "U":
@@ -1221,9 +1226,8 @@ def tablero_revision():
         linea = Label(revision,  text ='Linea ' + str(i), font=('Times New Roman', 10), width = 10)
         lineas_labels.append(linea)
     #! Se hace la cola de revisión // ARBOL
-    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','321JKL']
-    cola_revision = {}
-
+    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','CJS002']
+    
     #?Label
     tit_label = Label(revision, relief = 'solid',  text ='Revision Vehicular', font=('Times New Roman', 16), width = 20)
     tit_label.place(x=10,y=10)
@@ -1282,21 +1286,34 @@ def tablero_revision():
         #PRIMERA ENTRADA DE LOS AUTOS
         if cola_revision == {}:
             auto = placa.get()
-            entrar = cola_autos[-1]
-            if auto == entrar:
-                admitir = lineas
-                for lista in tablero:
-                    expediente = cola_autos.pop()
-                    cola_revision[expediente] = [1,[],"Pendiente"]
-                    boton = lista[0]
-                    boton.config(text=expediente)
-                print(cola_autos)
-                print(cola_revision)
+            confirmacion = False
+            for linea in colas_espera:
+                if linea == []:
+                    pass
+                if linea != []:
+                    entrar = linea[-1]
+                    if auto == entrar:
+                        confirmacion = True
+                        break
+                    else:
+                        pass
+            if confirmacion == True:
+                for i, lineas in enumerate(colas_espera):
+                    print(lineas)
+                    if lineas:
+                        expediente = lineas.pop(-1)
+                        print(expediente)
+                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        boton = tablero[i][0]
+                        boton.config(text=expediente)
+                        pass
+                return
             else:
                 messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA PRIMERO EN LA COLA DE ESPERA")
+                return
 
         if cola_revision != {}:
-            #REVISA QUE NO HAY AUTOMOVILES EN LA LINEA 5
+            #! REVISA QUE NO HAY AUTOMOVILES EN LA LINEA 5
             for lista in tablero:
                 boton = lista[4]
                 lleno = boton.cget("text")
@@ -1304,27 +1321,125 @@ def tablero_revision():
                     pass
                 else:
                     messagebox.showinfo("ERROR","HAY AUTOMOVILES EN EL PUESTO 5 Y NO SE PUEDEN MOVER AUTOMOVILES ")
-            #COLA DE ESPERA
+                    return
+            #COLA DE ESPERA ☯
             auto = placa.get()
-            if auto in cola_autos:
-                entrar = cola_autos[-1]
-                if auto == entrar:
-                    pass
+            membresia = False
+            for lista in colas_espera:
+                if auto in lista:
+                    if lista[-1] == auto:
+                        membresia = True
+                        break
+                    else:
+                        break
                 else:
-                    messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA PRIMERO EN LA COLA DE ESPERA")
-            #COLA DE REVISION
-            if auto in cola_autos:
-                mover = cola_autos[auto]
+                    pass
+            if membresia == True:
+                #! MOVER TEXTO DE ENFRENTE HACIA ATRAS
+                Matriz = []
+                for listas in tablero:
+                    filas = []
+                    for botones in listas:
+                        texto = botones.cget("text")
+                        filas.append(texto)
+                    Matriz.append(filas)
+                print(Matriz)
+                #! MOVER LA NUEVA MATRIZ UN ESPACIO 
+                for i in range(len(Matriz)):
+                    Matriz[i] = Matriz[i][0:4]
+                    Matriz[i].insert(0, "")
+                    print(Matriz[i])
+                print(Matriz)
+                #! ☯☯☯ AUMENTAR ELEMENTOS EN COLA DE REVISION ☯☯☯☯
+                for lista in Matriz:
+                    for elemento in lista:
+                        if elemento in cola_revision:
+                            cola_revision[elemento][0] += 1 
+                        else:
+                            pass
+                #! PONER VALORES DE 
+                for i,filas in enumerate(Matriz):
+                    for j,elemento in enumerate(filas):
+                        print(elemento)
+                        boton = tablero[i][j]  # Obtener el botón de la matriz tablero en la posición (i, j)
+                        boton.config(text=elemento)
+                #! Crear expedientes he ingreso nuevos
+                for i, lineas in enumerate(colas_espera):
+                    print(lineas)
+                    if lineas:
+                        expediente = lineas.pop(-1)
+                        print(expediente)
+                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        boton = tablero[i][0]
+                        boton.config(text=expediente)
+                        pass
+                return
+            #!!!!!! COLA DE REVISION
+            if auto in cola_revision:
+                mover = cola_revision[auto][0]
+                #! VER SI EL AUTO VA DE PRIMERO
+                for llave in cola_revision:
+                    for info in cola_revision[llave][:1]:
+                        if info > mover:
+                             messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA DE PRIMERO EN LA LINEA DE REVISION")
+                             return
+                        else:
+                            pass
+                #! SACAR LA LISTA DE VEHICULOS 
+                #! MOVER TEXTO DE ENFRENTE HACIA ATRAS
+                Matriz = []
+                for listas in tablero:
+                    filas = []
+                    for botones in listas:
+                        texto = botones.cget("text")
+                        filas.append(texto)
+                    Matriz.append(filas)
 
+                # MOVER LA NUEVA MATRIZ UN ESPACIO
+                for i in range(len(Matriz)):
+                    Matriz[i] = Matriz[i][0:4]
+                    Matriz[i].insert(0, "")
+
+                # AUMENTAR ELEMENTOS EN COLA DE REVISION
+                for lista in Matriz:
+                    for elemento in lista:
+                        if elemento in cola_revision:
+                            cola_revision[elemento][0] += 1
+
+                # PONER VALORES DE LA MATRIZ EN LOS BOTONES
+                for i, filas in enumerate(Matriz):
+                    for j, elemento in enumerate(filas):
+                        boton = tablero[i][j]
+                        boton.config(text=elemento)
+
+                # Crear expedientes e ingresar nuevos
+                for i, lineas in enumerate(colas_espera):
+                    print(lineas)
+                    if lineas:
+                        expediente = lineas.pop(-1)
+                        print(expediente)
+                        cola_revision[expediente] = [1, [], "Pendiente"]
+                        boton = tablero[i][0]
+                        boton.config(text=expediente)
+                        pass
+                return
             else:
-                messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA EN NINGUNA COLA DE ESPERA O REVISION")
+                messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA PRIMERO EN COLA DE ESPERA O REVISION")
+                return
             #revisa que vaya de primero en la cola de espera
     def U_commando():
         auto = placa.get()
-        if auto in cola_autos:
-            messagebox("¡ATENCION!","EL AUTO NO SE ENCUENTRA EN LA COLA DE REVISIÓN")
+        for lista in tablero:
+            boton = lista[4]
+            lleno = boton.cget("text")
+            if lleno == "":
+                pass
+            else:
+                messagebox.showinfo("ERROR","HAY AUTOMOVILES EN EL PUESTO 5 Y NO SE PUEDEN MOVER AUTOMOVILES ")
+                return
         if auto not in cola_revision:
-            messagebox("¡ATENCION!","EL AUTO NO SE ENCUENTRA EN LA COLA DE REVISIÓN")
+            messagebox.showinfo("¡ATENCION!","EL AUTO NO SE ENCUENTRA EN LA COLA DE REVISIÓN")
+            return
         else:
             for lista in tablero:
                 for i,boton in enumerate(lista):
@@ -1336,15 +1451,83 @@ def tablero_revision():
                         siguiente = b2.cget("text")
                         if siguiente == "":
                             b2.configure(text="☯")
-                            break
+                            boton.configure(text="")
+                            cola_revision[auto][0] += 1
+                            print(cola_revision)
                         else:
-                            messagebox("¡ATENCION!","EL AUTO NO SE PUEDE MOVER AL SIGUIENTE PUESTO DE REVISION")
+                            messagebox.showinfo("¡ATENCION!","EL AUTO NO SE PUEDE MOVER AL SIGUIENTE PUESTO DE REVISION")
             for lista in tablero:
-                for boton in enumerate(lista):
+                for boton in lista:
                     texto = boton.cget("text")
                     if texto == "☯":
                         boton.configure(text=auto)
+    def E_commando():
+        asig_falla = falla.get()
+        auto = placa.get()
+        if asig_falla == "":
+            messagebox.showinfo("ERROR","NO INGRESO EL CODIGO DE LA FALLA")
+            return
+        if asig_falla not in Diccionario_Fallas:
+            messagebox.showinfo("ERROR","NO EXISTE FALLA REGISTRADA CON ESE CODIGO")
+            return
+        if auto not in cola_revision:
+            messagebox.showinfo("ERROR","NO PUEDE ASIGNARSE FALLA PORQUE NO ESTA EN REVISION")
+            return
+        else:
+            cola_revision[auto][1] += [asig_falla]
+            messagebox.showinfo("EXITO!","SE ASGINO FALLA")
+            return print(cola_revision)
+    #! SE DEBE CAMBIAR DESPUES PARA LO DE LOS PDF
+    def F_commando():
+        auto = placa.get()
+        if auto not in cola_revision:
+            messagebox.showinfo("ERROR","NO PUEDE LA REVISION PORQUE NO ESTA EN EL PUESTO FINAL")
+            return
+        info = cola_revision[auto]
+        contador = info[0]
+        if contador != 5:
+            messagebox.showinfo("ERROR","NO PUEDE LA REVISION PORQUE NO ESTA EN EL PUESTO FINAL")
+            return
+        else:
+            auto = placa.get()
+            informacion = buscar_info(auto)
+            #CALCULAR CASOS
+            fallas_asig = cola_revision[auto][1]
+            estado = cola_revision[auto][2]
+            if fallas_asig == []:
+                # Caso sin fallas
+                estado = "Aprovado"
+            else:
+                Leves = []
+                Graves = []
+                for codigo in fallas_asig:
+                    tipo = Diccionario_Fallas[codigo][1]
+                    descripcion = Diccionario_Fallas[codigo][2]
+                    if tipo == 1:
+                        Leves.append([descripcion,codigo])
+                    if tipo == 2:
+                        Graves.append([descripcion,codigo])
+                if len(Graves) > 3:
+                    estado = "Sacar Circulacion"
+                if len(Graves) <= 1 and len(Graves) <= 3:
+                    estado = "Reinspeccion"
+                if len(Graves) ==  0:
+                    estado = "Aprovado"
 
+                    
+    def buscar_info(auto):
+        #CALCULAR CASOS
+        for i in range(1, num_cita):
+            x = arbol_binario.buscar_nodos(i)
+            if x is None:
+                continue  # Salta al siguiente ciclo si x es None
+            if auto in x:
+                return x
+            else:
+                pass
+
+    
+        
 #?============================================================= Cancelar citas ============================================================================================================
 def cancelar_cita():
     c_citas = Toplevel()
@@ -1361,8 +1544,8 @@ def cancelar_cita():
     #* Función cancelar
     def cancelar():
         # Validaciones
-        if var_placa.get() in cola_espera: #! Otra posible corrección
-            cola_espera.pop(var_placa)
+        if var_placa.get() in colas_espera: #! Otra posible corrección
+            colas_espera.pop(var_placa)
         if var_placa.get() in cola_revision: #! Posible corrección futura (cuando se cree cola revisión)
             messagebox.showerror("", "No se puede eliminar, ya está en revisón.")
             return
