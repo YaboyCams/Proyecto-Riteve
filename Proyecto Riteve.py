@@ -41,7 +41,9 @@ global num_cita
 global colas_espera
 global cola_revision
 global historial_citas
-
+#todo
+global copy
+#todo
 
 num_cita = datos[0]
 historial_citas = datos[1]
@@ -57,15 +59,15 @@ lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
-tablero = []
 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
-colas_espera = []
-# colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
+
+colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
 #TODO ======================== CAMBIO ==========================
 cola_revision = {}
+copy = []
 #TODO ======================== CAMBIO ==========================
 
 
@@ -1095,8 +1097,19 @@ def lista_de_fallas():
                 anterior = info[0] 
                 if info[1] == 1:
                     falla.set(1)
+                    pass
                 else:
                     falla.set(2)
+                    pass
+#TODO
+                print(cola_revision)
+                for llave in cola_revision:
+                    for informacion in cola_revision[llave]:
+                        info = cola_revision[llave][1]
+                        if code in info:
+                            messagebox.showinfo("SISTEMA", "Hay carros en revision con esta falla por lo que no se puede eliminar")
+                            return
+#TODO
                 x = messagebox.askquestion('FALLA ENCONTRADA','¿Desea confirmar la eliminación de la falla' + str(code)+"?",master= fallas_ventana)
                 if x == 'yes':
                     Diccionario_Fallas.pop(code)
@@ -1230,9 +1243,7 @@ def tablero_revision():
     placa = StringVar()
     falla = StringVar()   
     
-    #! Se hace la cola de revisión // ARBOL
-    cola_autos = ['ABC123','DEF456','GHI789','JKL321','MNO654','PQR987','STU543','VWX876','YZA219','BCD654','EFG987','HIJ321','KLM654','NOP987','QRS321','TUV654','WXY987','ZAB321','CDE654','FGH987','IJK321','LMN654','OPQ987','RST321','UVW654','XYZ987','123ABC','456DEF','789GHI','321JKL']
-    cola_revision = {}
+    tablero = []
 
     #?Label
     tit_label = Label(revision, relief = 'solid',  text ='Revision Vehicular', font=('Times New Roman', 16), width = 20)
@@ -1300,10 +1311,14 @@ def tablero_revision():
             estacion.pack(side = LEFT, padx = 35)
             fila.append(estacion)
         tablero.append(fila)
-    
     marco_interno.update_idletasks()
     canvas.configure(scrollregion=canvas.bbox("all"))
-    
+    print(copy)
+    if copy != []:
+        for i,fila in enumerate(copy):
+            for j, texto in enumerate(fila):
+                boton = tablero[i][j]
+                boton.configure(text=texto)
     #!======================================== COMANDOS ==================================
     def T_commando():
         #PRIMERA ENTRADA DE LOS AUTOS
@@ -1496,6 +1511,9 @@ def tablero_revision():
         if auto not in cola_revision:
             messagebox.showinfo("ERROR","NO PUEDE ASIGNARSE FALLA PORQUE NO ESTA EN REVISION")
             return
+        if asig_falla in cola_revision[auto][1]:
+            messagebox.showinfo("ERROR","ESTA FALLA YA FUE ASIGNADA")
+            return            
         else:
             cola_revision[auto][1] += [asig_falla]
             messagebox.showinfo("EXITO!","SE ASGINO FALLA")
@@ -1525,7 +1543,7 @@ def tablero_revision():
                 Graves = []
                 for codigo in fallas_asig:
                     tipo = Diccionario_Fallas[codigo][1]
-                    descripcion = Diccionario_Fallas[codigo][2]
+                    descripcion = Diccionario_Fallas[codigo][0]
                     if tipo == 1:
                         Leves.append([descripcion,codigo])
                     if tipo == 2:
@@ -1548,7 +1566,22 @@ def tablero_revision():
                 return x
             else:
                 pass
+    def on_closing():
+        global copy
+        copy = []
+        for lista in tablero:
+            fila = []
+            for boton in lista:
+                texto = boton['text']
+                fila.append(texto)
+            copy.append(fila)
+        print(copy)
+        revision.destroy()
+        return copy
 
+
+    revision.protocol("WM_DELETE_WINDOW", on_closing)
+    revision.mainloop()
 #?============================================================= Cancelar citas ============================================================================================================
 def cancelar_cita():
     c_citas = Toplevel()
