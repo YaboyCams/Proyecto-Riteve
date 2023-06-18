@@ -57,6 +57,8 @@ lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
 
+tablero = []
+
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
@@ -299,7 +301,7 @@ def programar_cita():
             if len(propietario.get()) < 6:
                 messagebox.showerror("", "Nombre del propietario no válido. Vuelva a intentar.")
                 return
-            if len(direccion.get()) < 3:
+            if len(direccion.get()) < 10:
                 messagebox.showerror("", "Dirección no válida. Vuelva a intentar.")
                 return
             if len(telefono.get()) < 8:
@@ -1285,7 +1287,7 @@ def tablero_revision():
     marco_interno = Frame(frame_scrollbar)
     canvas.create_window((0,0), window = marco_interno, anchor = NW)
     
-    tablero = []
+    
     for i in range(lineas):
         frame_linea = Frame(marco_interno)
         frame_linea.pack(side = TOP, anchor = W, pady = 10)
@@ -1398,13 +1400,13 @@ def tablero_revision():
             if auto in cola_revision:
                 mover = cola_revision[auto][0]
                 #! VER SI EL AUTO VA DE PRIMERO
-                for llave in cola_revision:
+                """for llave in cola_revision:
                     for info in cola_revision[llave][:1]:
                         if info > mover:
                              messagebox.showinfo("ERROR","ESTE AUTOMOVIL NO ESTA DE PRIMERO EN LA LINEA DE REVISION")
                              return
                         else:
-                            pass
+                            pass"""
                 #! SACAR LA LISTA DE VEHICULOS 
                 #! MOVER TEXTO DE ENFRENTE HACIA ATRAS
                 Matriz = []
@@ -1562,11 +1564,9 @@ def cancelar_cita():
     #* Función cancelar
     def cancelar():
         # Validaciones
-        """if var_placa.get() in cola_espera: #! Otra posible corrección
-            cola_espera.pop(var_placa)"""
-        """if var_placa.get() in cola_revision: #! Posible corrección futura (cuando se cree cola revisión)
+        if var_placa.get() in cola_revision: 
             messagebox.showerror("", "No se puede eliminar, ya está en revisón.")
-            return"""
+            return
         datos_cita = arbol_binario.buscar_nodos(int(var_cita.get()))
         if datos_cita == None:
             messagebox.showerror("","Esta cita no existe. Vuélvalo a intentar.")
@@ -1578,6 +1578,18 @@ def cancelar_cita():
         if datos_cita[-1] == "PENDIENTE":
             if messagebox.askyesno("", "¿Está seguro de querer cancelar la cita?") == True:
                 arbol_binario.cambiar_estado(datos_cita, "CANCELADA")
+                datos_cita[-1] == "CANCELADA"
+                registro_num = open("numeroscitas.dat", "wb")
+                pickle.dump([num_cita, historial_citas], registro_num)
+                print(historial_citas)
+                registro_num.close()
+                
+                # Eliminación de cola de espera en caso de estarlo
+                for cola in colas_espera():
+                    if var_placa.get() in cola: 
+                        indice = cola.index(var_placa.get())
+                        cola.pop(indice)
+                        
                 messagebox.showinfo("","Cita cancelada existosamente.")
                 entry_cita.delete(0, END)
                 entry_placa.delete(0, END)
@@ -1630,8 +1642,9 @@ def ingreso_vehiculos():
     
     lista_lens = []
     #* Agregar a lista de colas una cola de espera para cada una
-    if len(colas_espera) == 0:
-        for f in range(num_filas):
+    if len(colas_espera) != num_filas:
+        lineas_necesarias = num_filas - len(colas_espera)
+        for f in range(lineas_necesarias):
             colas_espera.append([])
     print(colas_espera)
 
@@ -1649,16 +1662,26 @@ def ingreso_vehiculos():
         #* Validaciones 
         if datos_cita == None:
             messagebox.showerror("", "Esta cita no existe.")
+            return
             
-        if datos_cita[-1] != "PENDIENTE":
+        if datos_cita[-1] == "CANCELADA":
             messagebox.showerror("", "Esta cita fue cancelada.")
+            return
+        if datos_cita[-1] == "APROBADA":
+            messagebox.showerror("", "Este vehículo ya pasó la revisión.")
+            return
         
-        
-        
+        fecha_cita = datos_cita[0]
         tipo_vehiculo = datos_cita[3]
         marca = datos_cita[5]
         modelo = datos_cita[6]
         propietario = datos_cita[7]
+        
+        if not(fecha_cita.year == fecha_actual.year and fecha_cita.month == fecha_actual.month and fecha_cita.day == fecha_actual.day):
+            messagebox.showerror("", "No se encuentra en la fecha ")
+            return
+            if (fecha_cita - fecha_actual) >= timedelta(hours = 1):
+                pass
         
         label_marca1 = Label(ingreso, text = "Marca: ", font = ("Times New Roman", 13, "bold"))
         label_marca2 = Label(ingreso, text = f"{marca}", font = ("Times New Roman", 13))
@@ -1714,6 +1737,12 @@ def ingreso_vehiculos():
             label.place_forget()
         entry_cita.delete(0, END)
         entry_placa.delete(0, END)
+        
+    #* Fecha actual
+    fecha_actual = datetime.now()
+    con_formato = datetime.strftime(fecha_actual, "%d/%m/%Y  %H:%M:%S")
+    actual = Label(ingreso, font = ("Times New Roman", 13, "bold"), text = f"Hora actual: {con_formato}")
+    actual.pack(side = TOP, anchor = E)
     
     #* Título
     titulo = Label(ingreso, text = "Ingreso de vehículos", font = ("Times New Roman", 20), relief = SOLID, width = 22)
