@@ -62,7 +62,8 @@ tablero = []
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
-colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
+colas_espera = []
+# colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
 #TODO ======================== CAMBIO ==========================
 cola_revision = {}
 #TODO ======================== CAMBIO ==========================
@@ -1275,7 +1276,7 @@ def tablero_revision():
     frame_scrollbar = Frame(revision)
     frame_scrollbar.place(x = 250, y = 80, width = 730, height = 400)
     
-    canvas = Canvas(frame_scrollbar, bg = "red")
+    canvas = Canvas(frame_scrollbar)
     canvas.pack(side = LEFT, fill = BOTH, expand = True)
     
     scrollbar = ttk.Scrollbar(frame_scrollbar, orient = VERTICAL, command=canvas.yview)
@@ -1677,11 +1678,19 @@ def ingreso_vehiculos():
         modelo = datos_cita[6]
         propietario = datos_cita[7]
         
-        if not(fecha_cita.year == fecha_actual.year and fecha_cita.month == fecha_actual.month and fecha_cita.day == fecha_actual.day):
-            messagebox.showerror("", "No se encuentra en la fecha ")
+        if fecha_cita.year == fecha_actual.year and fecha_cita.month == fecha_actual.month and fecha_cita.day == fecha_actual.day:
+            if (fecha_cita - fecha_actual) < timedelta(hours = 1):
+                messagebox.showerror("", "No llegó a tiempo para su revisión. Su cita será cancelada para que cree otra.")
+                arbol_binario.cambiar_estado(datos_cita, "CANCELADA")
+                datos_cita[-1] = "CANCELADA"
+                registro_num = open("numeroscitas.dat", "wb")
+                pickle.dump([num_cita, historial_citas], registro_num)
+                print(historial_citas)
+                registro_num.close()
+                return
+        else:
+            messagebox.showerror("", "No se encuentra en la fecha de revisión asignada.")
             return
-            if (fecha_cita - fecha_actual) >= timedelta(hours = 1):
-                pass
         
         label_marca1 = Label(ingreso, text = "Marca: ", font = ("Times New Roman", 13, "bold"))
         label_marca2 = Label(ingreso, text = f"{marca}", font = ("Times New Roman", 13))
