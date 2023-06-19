@@ -126,19 +126,19 @@ def envio_correo(destino,caso,persona,dia, hora):
         #TODO NOMBRE GENERICO
         with open("Aprobado.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Aprobado")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Aprobado.pdf")
         with open("Certificado.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado.pdf")
     #! Solo envia resultados
     if caso == "REINSPECCIÓN":
         with open("Reinspección.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reinspección")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reinspección.pdf")
     if caso == "SACAR DE CIRCULACION":
         with open("Reprobado.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reprobado")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reprobado.pdf")
     if caso == "Cita":
         pass
     context = ssl.create_default_context()
@@ -1787,6 +1787,8 @@ def tablero_revision():
                 pickle.dump([num_cita, historial_citas], registro_num)
                 print(historial_citas)
                 registro_num.close()
+                resultados_pdf(estado, informacion, Graves, Leves)
+                envio_correo(informacion[9], estado, informacion[7], 0,0)
             if len(Graves) <= 1 and len(Graves) <= fallas_max:
                 estado = "REINSPECCIÓN"
                 arbol_binario.cambiar_estado(informacion, estado)
@@ -1795,6 +1797,8 @@ def tablero_revision():
                 pickle.dump([num_cita, historial_citas], registro_num)
                 print(historial_citas)
                 registro_num.close()
+                resultados_pdf(estado, informacion, Graves, Leves)
+                envio_correo(informacion[9], estado, informacion[7], 0,0)
             if len(Graves) == 0:
                 estado = "APROBADA"
                 arbol_binario.cambiar_estado(informacion, estado)
@@ -1803,6 +1807,9 @@ def tablero_revision():
                 pickle.dump([num_cita, historial_citas], registro_num)
                 print(historial_citas)
                 registro_num.close()
+                resultados_pdf(estado, informacion, Graves, Leves)
+                certificado_pdf(informacion)
+                envio_correo(informacion[9], estado, informacion[7], 0,0)
             cola_revision.pop(auto)
             print(cola_revision)
             #todo PONER LO DEL BOTÓN ACÁ
