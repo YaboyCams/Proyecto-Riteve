@@ -66,7 +66,7 @@ vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", 
 
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
 colas_espera = []
-# colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
+#colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
 #TODO ======================== CAMBIO ==========================
 cola_revision = {}
 copy = []
@@ -124,17 +124,21 @@ def envio_correo(destino,caso,persona,dia, hora):
     #! Envia resultados y Certificado
     if caso == "APROBADA":
         #TODO NOMBRE GENERICO
-        with open("Resultados Prueba Riteve.pdf","rb") as f:
+        with open("Aprobado.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Resultados Prueba Riteve")
-        with open("Certificado Prueba Riteve.pdf","rb") as f:
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Aprobado")
+        with open("Certificado.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado Prueba Riteve")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado")
     #! Solo envia resultados
-    if caso == "REINSPECCIÓN" or caso == "SACAR DE CIRCULACIÓN":
-        with open("Resultados Prueba Riteve.pdf","rb") as f:
+    if caso == "REINSPECCIÓN":
+        with open("Reinspección.pdf","rb") as f:
             file_data = f.read()
-            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Resultados Prueba Riteve")
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reinspección")
+    if caso == "SACAR DE CIRCULACION":
+        with open("Reprobado.pdf","rb") as f:
+            file_data = f.read()
+            em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Reprobado")
     if caso == "Cita":
         pass
     context = ssl.create_default_context()
@@ -1762,6 +1766,12 @@ def tablero_revision():
             Leves = []
             Graves = []
             #todo CAMBIOS HECHOS A TABLERO ACÁ
+            for lista in tablero:
+                for boton in lista:
+                    texto = boton.cget("text")
+                    if texto == auto:
+                        boton.configure(text="")
+        
             for codigo in fallas_asig:
                 tipo = Diccionario_Fallas[codigo][1]
                 descripcion = Diccionario_Fallas[codigo][0]
