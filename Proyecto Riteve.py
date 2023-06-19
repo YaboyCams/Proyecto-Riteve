@@ -26,6 +26,8 @@ import re
 import smtplib
 import logging  
 import socket 
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 #?============================================================= Programa ====================================================================================================
 registros = open("numeroscitas.dat", "rb")
 datos = pickle.load(registros)
@@ -41,9 +43,8 @@ global num_cita
 global colas_espera
 global cola_revision
 global historial_citas
-#todo
+
 global copy
-#todo
 
 num_cita = datos[0]
 historial_citas = datos[1]
@@ -58,13 +59,14 @@ elegida.set(0)
 lf = open('Lista_Fallas.dat','rb')
 Diccionario_Fallas = pickle.load(lf)
 lf.close()
-
+print(Diccionario_Fallas)
+tablero = []
 
 vehiculos = ["Automovil particular y caraga liviana (menor o igual a 3500 kg)", "Automovil particular y de carga liviana (mayor a 3500 kg pero menor a 8000 kg)", "Vehículo de carga pesada y cabezales (mayor o igual a 8000 kg)", "Taxi", "Autobús, bus o microbús", "Motocicleta", "Equipo especial de obras", "Equipo especial agrícola (maquinaria agrícola)"]
 
 #TODO ======================== CAMBIO DE PRUEBA DEVOLVER A [] ==========================
-
-colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
+colas_espera = []
+# colas_espera = [['ABC123','DEF456'],['GHI789','JKL321'],['MNO654','PQR987'],['STU543','VWX876'],['YZA219','BCD654'],['789GHI','CJS002']]
 #TODO ======================== CAMBIO ==========================
 cola_revision = {}
 copy = []
@@ -139,6 +141,7 @@ def envio_correo(destino,caso,persona,dia, hora):
     with smtplib.SMTP_SSL('smtp.gmail.com',465,context=context) as smtp:
         smtp.login(email_sender, email_password)
         smtp.sendmail(email_sender, email_receiver, em.as_string())
+        
         
 #?============================================================= Programar citas =========================================================================================================
 def programar_cita():
@@ -1097,7 +1100,6 @@ def lista_de_fallas():
                 anterior = info[0] 
                 if info[1] == 1:
                     falla.set(1)
-                    pass
                 else:
                     falla.set(2)
                     pass
@@ -1582,6 +1584,7 @@ def tablero_revision():
 
     revision.protocol("WM_DELETE_WINDOW", on_closing)
     revision.mainloop()
+    
 #?============================================================= Cancelar citas ============================================================================================================
 def cancelar_cita():
     c_citas = Toplevel()
