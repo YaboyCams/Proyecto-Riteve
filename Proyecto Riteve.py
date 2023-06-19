@@ -51,7 +51,7 @@ historial_citas = datos[1]
 
 for c in historial_citas:
     arbol_binario.agregar(c)
-
+print(historial_citas)
 elegida = IntVar()
 elegida.set(0)
 
@@ -105,13 +105,13 @@ def envio_correo(destino,caso,persona,dia, hora):
     if caso == "Cita":
         mensaje += "Hola, "+ str(persona) + ". Este es su correo de confirmación de Revisión Técnica Vehícular" + " el día " + dia + " a las " + hora
         asunto += 'Confirmación de cita'
-    if caso == "Aprovado":
+    if caso == "APROBADA":
         mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
-    if caso == "Reinspeccion":
+    if caso == "REINSPECCIÓN":
         mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y la necesidad de REINSPECCION"
         asunto += 'Resultados Revicion Técnica Vehícular: ' + str(persona)
-    if caso == "Sacar Circulacion":
+    if caso == "SACAR DE CIRCULACIÓN":
         mensaje += "Hola, " + str(persona) + ". El siguiente correo es para notificarle los resultados de su Revisión Técnica Vehícular y que su vehículo debera ser SACADO DE CIRCULACION"
         asunto += 'Reusltados Revicion Técnica Vehícular: ' + str(persona)
     subject = asunto
@@ -122,7 +122,7 @@ def envio_correo(destino,caso,persona,dia, hora):
     em['Subject'] = subject
     em.set_content(body)
     #! Envia resultados y Certificado
-    if caso == "Aprovado":
+    if caso == "APROBADA":
         #TODO NOMBRE GENERICO
         with open("Resultados Prueba Riteve.pdf","rb") as f:
             file_data = f.read()
@@ -131,7 +131,7 @@ def envio_correo(destino,caso,persona,dia, hora):
             file_data = f.read()
             em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Certificado Prueba Riteve")
     #! Solo envia resultados
-    if caso == "Reinspeccion" or caso == "Sacar de Circulación":
+    if caso == "REINSPECCIÓN" or caso == "SACAR DE CIRCULACIÓN":
         with open("Resultados Prueba Riteve.pdf","rb") as f:
             file_data = f.read()
             em.add_attachment(file_data, maintype="aplication",subtype="pdf",filename="Resultados Prueba Riteve")
@@ -141,6 +141,225 @@ def envio_correo(destino,caso,persona,dia, hora):
     with smtplib.SMTP_SSL('smtp.gmail.com',465,context=context) as smtp:
         smtp.login(email_sender, email_password)
         smtp.sendmail(email_sender, email_receiver, em.as_string())
+        
+#! Creación de resultados.pdf
+def resultados_pdf(estado, cita, graves, leves):
+    
+    if estado ==  "APROBADA":
+        resultados = canvas.Canvas(f"Aprobado.pdf", pagesize = letter)
+        resultados.drawString(200,742, "Revisión Técnica: Resultados")
+        # Datos
+        y = 712
+        resultados.drawString(50, y, f"Datos de la cita:")
+        y -= 30
+        resultados.drawString(80, y, f"- Cita # {cita[1]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de cita: {cita[2]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Número de placa: {cita[4]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de vehículo: {cita[3]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Marca del vehículo: {cita[5]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Modelo del vehículo: {cita[6]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Propietario: {cita[7]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Teléfono: {cita[8]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Correo electrónico: {cita[9]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Dirección: {cita[10]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Fecha y hora de la cita: {cita[0]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Estado: {cita[11]}")
+        resultados.showPage()
+        
+        # Resultados de la cita
+        y = 712
+        resultados.drawString(50, y, "Registro de fallas:")
+        y -= 30
+        if len(graves) != 0:
+            resultados.drawString(80, y, "Fallas graves:")
+            y -= 30
+            for falla in graves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas graves: No hay")
+            y -= 30
+            
+        if len(leves) != 0:
+            resultados.drawString(80, y, "Fallas leves:")
+            y -= 30
+            for falla in leves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas leves: No hay")
+            y -= 30
+            
+        resultados.drawString(50, y, "Veredicto Final:")
+        y -= 30
+        resultados.drawString(80, y, "¡Felicitaciones! Su vehículo ha aprobado la revisón.")
+        y -= 15
+        resultados.drawString(80, y, "En el correo se le adjuntará un certificado de tránsito.")
+        y -= 30
+        resultados.drawString(80, y, "Nos vemos el próximo año. Tenga un buen día.")
+            
+        resultados.save()
+    
+    # Reinspección    
+    if estado == "REINSPECCIÓN":
+        resultados = canvas.Canvas(f"Reinspección.pdf", pagesize = letter)
+        resultados.drawString(200,742, "Revisión Técnica: Resultados")
+        # Datos
+        y = 712
+        resultados.drawString(50, y, f"Datos de la cita:")
+        y -= 30
+        resultados.drawString(80, y, f"- Cita # {cita[1]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de cita: {cita[2]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Número de placa: {cita[4]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de vehículo: {cita[3]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Marca del vehículo: {cita[5]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Modelo del vehículo: {cita[6]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Propietario: {cita[7]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Teléfono: {cita[8]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Correo electrónico: {cita[9]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Dirección: {cita[10]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Fecha y hora de la cita: {cita[0]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Estado: {cita[11]}")
+        resultados.showPage()
+        
+        # Resultados de la cita
+        y = 712
+        resultados.drawString(50, y, "Registro de fallas:")
+        y -= 30
+        if len(graves) != 0:
+            resultados.drawString(80, y, "Fallas graves:")
+            y -= 30
+            for falla in graves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas graves: No hay")
+            y -= 30
+            
+        if len(leves) != 0:
+            resultados.drawString(80, y, "Fallas leves:")
+            y -= 30
+            for falla in leves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas leves: No hay")
+            y -= 30
+            
+        resultados.drawString(50, y, "Veredicto Final:")
+        y -= 30
+        resultados.drawString(80, y, "Su vehículo no ha pasado la revisón, tiene que hacerle una reinspección.")
+        y -= 15
+        resultados.drawString(80, y, f"Para pasar su vehículo no debe tener fallas graves, su vehículo tiene {len(graves)}.")
+        y -= 30
+        resultados.drawString(80, y, "Tenga un buen día.")
+            
+        resultados.save()
+    
+    # Sacar de circulación    
+    if estado == "SACAR DE CIRCULACIÓN":
+        resultados = canvas.Canvas(f"Reprobado.pdf", pagesize = letter)
+        resultados.drawString(200,742, "Revisión Técnica: Resultados")
+        # Datos
+        y = 712
+        resultados.drawString(50, y, f"Datos de la cita:")
+        y -= 30
+        resultados.drawString(80, y, f"- Cita # {cita[1]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de cita: {cita[2]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Número de placa: {cita[4]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Tipo de vehículo: {cita[3]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Marca del vehículo: {cita[5]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Modelo del vehículo: {cita[6]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Propietario: {cita[7]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Teléfono: {cita[8]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Correo electrónico: {cita[9]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Dirección: {cita[10]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Fecha y hora de la cita: {cita[0]}")
+        y -= 30
+        resultados.drawString(80, y, f"- Estado: {cita[11]}")
+        resultados.showPage()
+        
+        # Resultados de la cita
+        y = 712
+        resultados.drawString(50, y, "Registro de fallas:")
+        y -= 30
+        if len(graves) != 0:
+            resultados.drawString(80, y, "Fallas graves:")
+            y -= 30
+            for falla in graves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas graves: No hay")
+            y -= 30
+            
+        if len(leves) != 0:
+            resultados.drawString(80, y, "Fallas leves:")
+            y -= 30
+            for falla in leves:
+                resultados.drawString(100, y, f"- {falla}")
+                y-= 30
+        else:
+            resultados.drawString(80, y, "Fallas leves: No hay")
+            y -= 30
+            
+        resultados.drawString(50, y, "Veredicto Final:")
+        y -= 30
+        resultados.drawString(80, y, "Su vehículo no ha pasado la revisón, debe ser sacado de circulación.")
+        y -= 15
+        resultados.drawString(80, y, f"Su vehículo ha excedido el número de fallas graves máximas.")
+        y -= 30
+        resultados.drawString(80, y, "Tenga un buen día.")
+            
+        resultados.save()
+
+#! Creación del certificado    
+def certificado_pdf(cita):
+    fecha_inicio = cita[0]
+    fecha_final = fecha_inicio + timedelta(days = 365)
+    
+    fecha1_formato = datetime.strftime(fecha_inicio, "%d/%m/%Y")
+    fecha2_formato = datetime.strftime(fecha_final, "%d/%m/%Y")
+    certificado = canvas.Canvas(f"Certificado.pdf", pagesize = letter)
+    certificado.drawString(200, 450, "Certificado de Tránsito")
+    
+    felicitacion = certificado.beginText(80, 400)
+    felicitacion.textLines(f"Se le entrega este certificado a {cita[7]}, dueño del vehículo de placa {cita[4]},\n un {cita[3]} \ny marca {cita[5]}. Este certificado es válido desde {fecha1_formato} hasta el {fecha2_formato}.")
+    certificado.drawText(felicitacion)
+    certificado.drawString(80, 350,"¡Felicitaciones! Nos veremos el próximo año.")
+    certificado.save()
         
         
 #?============================================================= Programar citas =========================================================================================================
@@ -1240,6 +1459,7 @@ def tablero_revision():
     dat = pickle.load(config)
     config.close()
     lineas = dat[0]
+    fallas_max = int(dat[5])
 
     ident = StringVar()
     placa = StringVar()
@@ -1533,29 +1753,50 @@ def tablero_revision():
             return
         else:
             auto = placa.get()
-            informacion = buscar_info(auto)
+            for c in historial_citas:
+                if c[4] == auto and c[-1] == "PENDIENTE":
+                    informacion = c
             #CALCULAR CASOS
             fallas_asig = cola_revision[auto][1]
-            estado = cola_revision[auto][2]
-            if fallas_asig == []:
-                # Caso sin fallas
+            # estado = cola_revision[auto][2]
+            Leves = []
+            Graves = []
+            #todo CAMBIOS HECHOS A TABLERO ACÁ
+            for codigo in fallas_asig:
+                tipo = Diccionario_Fallas[codigo][1]
+                descripcion = Diccionario_Fallas[codigo][0]
+                if tipo == 1:
+                    Leves.append([descripcion,codigo])
+                if tipo == 2:
+                    Graves.append([descripcion,codigo])
+            if len(Graves) > fallas_max: #! cambio a arbol binario va acá
+                estado = "SACAR DE CIRCULACIÓN"
+                arbol_binario.cambiar_estado(informacion, estado)
+                informacion[-1] = estado
+                registro_num = open("numeroscitas.dat", "wb")
+                pickle.dump([num_cita, historial_citas], registro_num)
+                print(historial_citas)
+                registro_num.close()
+            if len(Graves) <= 1 and len(Graves) <= fallas_max:
+                estado = "REINSPECCIÓN"
+                arbol_binario.cambiar_estado(informacion, estado)
+                informacion[-1] = estado
+                registro_num = open("numeroscitas.dat", "wb")
+                pickle.dump([num_cita, historial_citas], registro_num)
+                print(historial_citas)
+                registro_num.close()
+            if len(Graves) == 0:
                 estado = "APROBADA"
-            else:
-                Leves = []
-                Graves = []
-                for codigo in fallas_asig:
-                    tipo = Diccionario_Fallas[codigo][1]
-                    descripcion = Diccionario_Fallas[codigo][0]
-                    if tipo == 1:
-                        Leves.append([descripcion,codigo])
-                    if tipo == 2:
-                        Graves.append([descripcion,codigo])
-                if len(Graves) > 3: #! cambio a arbol binario va acá
-                    estado = "SACAR DE CIRCULACIÓN"
-                if len(Graves) <= 1 and len(Graves) <= 3:
-                    estado = "REINSPECCIÓN"
-                if len(Graves) ==  0:
-                    estado = "APROBADA"
+                arbol_binario.cambiar_estado(informacion, estado)
+                informacion[-1] = estado
+                registro_num = open("numeroscitas.dat", "wb")
+                pickle.dump([num_cita, historial_citas], registro_num)
+                print(historial_citas)
+                registro_num.close()
+            cola_revision.pop(auto)
+            print(cola_revision)
+            #todo PONER LO DEL BOTÓN ACÁ
+            messagebox.showinfo("", f"VEHÍCULO {auto} HA SALIDO EXISTOSAMENTE DE LA COLA DE ESPERA")
 
                     
     def buscar_info(auto):
