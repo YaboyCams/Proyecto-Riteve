@@ -94,4 +94,5 @@ class Arbol:
             return self.buscar_nodos_aux(cita, nodo_actual.izquierdo)
         else:
             return self.buscar_nodos_aux(cita, nodo_actual.derecho)
-        
+    
+    
